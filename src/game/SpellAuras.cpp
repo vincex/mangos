@@ -2924,6 +2924,11 @@ void Aura::HandleAuraTrackStealthed(bool apply, bool Real)
 
 void Aura::HandleAuraModScale(bool apply, bool Real)
 {
+	std::list<Aura *> const& mTotalAuraList = m_target->GetAurasByType(SPELL_AURA_MOD_SCALE);
+	if (mTotalAuraList.size()>1){
+		if (m_modifier.m_amount = m_target->GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SCALE))
+			return;
+	}
     m_target->ApplyPercentModFloatValue(OBJECT_FIELD_SCALE_X,m_modifier.m_amount,apply);
 }
 
