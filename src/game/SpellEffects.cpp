@@ -5411,20 +5411,51 @@ void Spell::EffectMomentMove(uint32 i)
         uint32 mapid = m_caster->GetMapId();
         float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
 
-        // before caster
-        float fx,fy,fz;
-        unitTarget->GetClosePoint(fx,fy,fz,unitTarget->GetObjectSize(),dis);
-        float ox,oy,oz;
-        unitTarget->GetPosition(ox,oy,oz);
+            /*TANKK - fix BLINK MAGE*/
+            float fx,fy,fz;
+            float dx,dy,dz;
+            float angle = unitTarget->GetOrientation();
+            unitTarget->GetPosition(fx,fy,fz);
 
-        float fx2,fy2,fz2;                                  // getObjectHitPos overwrite last args in any result case
-        if(VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(mapid, ox,oy,oz+0.5, fx,fy,oz+0.5,fx2,fy2,fz2, -0.5))
-        {
-            fx = fx2;
-            fy = fy2;
-            fz = fz2;
-            unitTarget->UpdateGroundPositionZ(fx,fy,fz);
-        }
+            //Check use of vamps//
+            bool useVmap = false;
+            bool swapZone = true;
+            if( MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(fx, fy, fz, false) <  MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(fx, fy, fz, true) )
+                useVmap = true;
+
+            //Going foward 0.5f until max distance
+            for(float i=0.5f; i<dis; i+=0.5f)
+            {
+                unitTarget->GetNearPoint2D(dx,dy,i,angle);
+                dz = MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(dx, dy, fz, useVmap);
+
+                //Prevent climbing and go around object maybe 2.0f is to small? use 3.0f?
+                if( (dz-fz) < 2.0f && (dz-fz) > -2.0f && (unitTarget->IsWithinLOS(dx, dy, dz)))
+                {
+                    //No climb, the z differenze between this and prev step is ok. Store this destination for future use or check.
+                    fx = dx;
+                    fy = dy;
+                    fz = dz;
+                }
+                else
+                {
+                    //Something wrong with los or z differenze... maybe we are going from outer world inside a building or viceversa
+                    if(swapZone)
+                    {
+                        //so... change use of vamp and go back 1 step backward and recheck again.
+                        swapZone = false;
+                        useVmap = !useVmap;
+                        i-=0.5f;
+                    }
+                    else
+                    {
+                        //bad recheck result... so break this and use last good coord for teleport player...
+                        dz += 0.5f;
+                        break;
+                    }
+                }
+            }
+            fz+=1.0f;
 
         if(unitTarget->GetTypeId() == TYPEID_PLAYER)
             ((Player*)unitTarget)->TeleportTo(mapid, fx, fy, fz, unitTarget->GetOrientation(), TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET | (unitTarget==m_caster ? TELE_TO_SPELL : 0));
