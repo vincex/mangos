@@ -5505,7 +5505,8 @@ void Player::SetFactionVisibleForFactionTemplateId(uint32 FactionTemplateId)
     if(!factionTemplateEntry)
         return;
 
-    SetFactionVisibleForFactionId(factionTemplateEntry->faction);
+	if(factionTemplateEntry->faction)
+    	SetFactionVisibleForFactionId(factionTemplateEntry->faction);
 }
 
 void Player::SetFactionVisibleForFactionId(uint32 FactionId)
@@ -17819,7 +17820,7 @@ uint32 Player::GetBattleGroundQueueIdFromLevel() const
 float Player::GetReputationPriceDiscount( Creature const* pCreature ) const
 {
     FactionTemplateEntry const* vendor_faction = pCreature->getFactionTemplateEntry();
-    if(!vendor_faction)
+    if(!vendor_faction || !vendor_faction->faction)
         return 1.0f;
 
     ReputationRank rank = GetReputationRank(vendor_faction->faction);
@@ -18295,8 +18296,6 @@ void Player::UpdateAreaDependentAuras( uint32 newArea )
         else
             ++iter;
     }
-
-    if( newArea == 35)
 
     // some auras applied at subzone enter
     switch(newArea)
