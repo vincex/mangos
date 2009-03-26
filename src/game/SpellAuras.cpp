@@ -3921,8 +3921,12 @@ void Aura::HandleAuraModStalked(bool apply, bool Real)
 
 void Aura::HandlePeriodicTriggerSpell(bool apply, bool Real)
 {
-    if (m_periodicTimer <= 0)
-        m_periodicTimer += m_modifier.periodictime;
+	/*TANKK fix Grounding/Eearhtbind Totem*/
+    if (!(((Creature*)GetCaster())->isTotem() && (GetId() == 8179 || GetId() == 6474)))
+    {
+        if (m_periodicTimer <= 0)
+            m_periodicTimer += m_modifier.periodictime;
+    }
 
     m_isPeriodic = apply;
     m_isTrigger = apply;
