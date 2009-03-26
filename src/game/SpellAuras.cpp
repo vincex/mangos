@@ -1416,7 +1416,13 @@ void Aura::TriggerSpell()
 //                    // Inoculate Nestlewood Owlkin
                     case 29528: trigger_spell_id = 28713; break;
 //                    // Overload
-//                    case 29768: break;
+					case 29768:
+					{
+						int32 overloadDamage = GetModifier()->m_amount;
+						m_target->CastCustomSpell(m_target,29766,&overloadDamage,NULL,NULL,true);
+						GetModifier()->m_amount *= 2;
+						break;
+					}
 //                    // Return Fire
 //                    case 29788: break;
 //                    // Return Fire
@@ -1939,6 +1945,16 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 if(caster)
                     caster->CastSpell(caster,13138,true,NULL,this);
                 return;
+			case 37098:										//Rain of Bones
+				if(caster){
+					float px, py, pz;
+					m_target->GetClosePoint(px,py,pz,3.0f);
+					for(int i=0;i<3;++i){
+						Creature* tmp = caster->SummonCreature(17261,px,py,pz,m_target->GetOrientation(),TEMPSUMMON_DEAD_DESPAWN,0);
+						tmp->setFaction(caster->getFaction());
+					}
+				}
+				return;
             case 39850:                                     // Rocket Blast
                 if(roll_chance_i(20))                       // backfire stun
                     m_target->CastSpell(m_target, 51581, true, NULL, this);
@@ -3970,6 +3986,10 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool Real)
         // Cast Wrath of the Plaguebringer if not dispelled
         m_target->CastSpell(m_target, 29214, true, 0, this);
     }
+	//Flame Wreath
+	if(!apply && m_spellProto->Id == 29946 && m_duration>200){ //aura can be removed a little bit first
+		m_target->CastSpell(m_target, 29949, true, 0, this);
+	}
 }
 
 void Aura::HandlePeriodicEnergize(bool apply, bool Real)

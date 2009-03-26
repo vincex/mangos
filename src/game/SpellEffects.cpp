@@ -348,6 +348,9 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                 {
                     m_caster->CastSpell(m_caster,36032,true);
                 }
+				//Arcane Missiles Shade of Aran
+				if (m_spellInfo->Id == 29956)
+					damage *= 4;
                 break;
             }
             case SPELLFAMILY_WARRIOR:
@@ -890,6 +893,13 @@ void Spell::EffectDummy(uint32 i)
                     if (unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT && unitTarget->IsHostileTo(m_caster))
                         m_caster->CastSpell(unitTarget,32835,true);
                     return;
+				case 29979:									//Massive Magnetic Pull
+					if(unitTarget->GetTypeId() == TYPEID_PLAYER){
+						WorldLocation pos;
+						m_caster->GetPosition(pos);
+						((Player*)unitTarget)->TeleportTo(pos, TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET | (unitTarget==m_caster ? TELE_TO_SPELL : 0));
+					}
+					return;
                 case 30458:                                 // Nigh Invulnerability
                     if (!m_CastItem) return;
                     if(roll_chance_i(86))                   // success
