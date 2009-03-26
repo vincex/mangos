@@ -1429,14 +1429,10 @@ void Group::ResetInstances(uint8 method, Player* SendMsgTo)
             continue;
         }
 
-        if(method == INSTANCE_RESET_ALL)
+        if(dif == DIFFICULTY_HEROIC || entry->map_type == MAP_RAID)
         {
-            // the "reset all instances" method can only reset normal maps
-            if(dif == DIFFICULTY_HEROIC || entry->map_type == MAP_RAID)
-            {
-                ++itr;
-                continue;
-            }
+            ++itr;
+            continue;
         }
 
         bool isEmpty = true;
