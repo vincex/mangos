@@ -3686,6 +3686,14 @@ uint8 Spell::CanCast(bool strict)
         }
     }
 
+	if(m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER)
+	{
+            if (m_spellInfo->SpellFamilyFlags & 0x000020000000001CLL)
+			{
+				return 0;
+			}
+	}
+
     if(!m_triggeredByAuraSpell)
         if(uint8 castResult = CheckRange(strict))
             return castResult;
