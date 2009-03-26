@@ -5624,10 +5624,14 @@ void Spell::EffectCharge(uint32 /*i*/)
     if(!unitTarget || !m_caster)
         return;
 
+    Unit *chargeTarget = m_targets.getUnitTarget();
+    if (!chargeTarget)
+        return;
+
     float x, y, z;
-    unitTarget->GetContactPoint(m_caster, x, y, z);
-    if(unitTarget->GetTypeId() != TYPEID_PLAYER)
-        ((Creature *)unitTarget)->StopMoving();
+    chargeTarget->GetContactPoint(m_caster, x, y, z);
+    if(chargeTarget->GetTypeId() != TYPEID_PLAYER)
+        ((Creature *)chargeTarget)->StopMoving();
 
     // Only send MOVEMENTFLAG_WALK_MODE, client has strange issues with other move flags
     m_caster->SendMonsterMove(x, y, z, 0, MOVEMENTFLAG_WALK_MODE, 1);
@@ -5637,7 +5641,7 @@ void Spell::EffectCharge(uint32 /*i*/)
 
     // not all charge effects used in negative spells
     if ( !IsPositiveSpell(m_spellInfo->Id))
-        m_caster->Attack(unitTarget,true);
+        m_caster->Attack(chargeTarget,true);
 }
 
 void Spell::EffectSummonCritter(uint32 i)

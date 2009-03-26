@@ -1461,6 +1461,12 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,std::list<Unit*> &TagUnitMap)
         }
         case TARGET_CHAIN_DAMAGE:
         {
+            // Charge casted on self
+            if (m_spellInfo->Effect[i] == SPELL_EFFECT_CHARGE)
+            {
+                TagUnitMap.push_back(m_caster);
+                break;
+            }
             if (EffectChainTarget <= 1)
             {
                 Unit* pUnitTarget = SelectMagnetTarget();
