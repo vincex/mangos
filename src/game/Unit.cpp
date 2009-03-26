@@ -9644,10 +9644,19 @@ void Unit::SetInCombatState(bool PvP)
 
     if(PvP)
         m_CombatTimer = 5000;
-    SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
+     if(isInCombat())
+        return;
+     SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
+      if((GetTypeId()!=TYPEID_PLAYER && ((Creature*)this)->isPet()))
+    {
+        UpdateSpeed(MOVE_RUN, true);
+        UpdateSpeed(MOVE_SWIM, true);
+        UpdateSpeed(MOVE_FLIGHT, true);
+    }
+    else if(!isCharmed())
+        return;
+    SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT);
 
-    if(isCharmed() || (GetTypeId()!=TYPEID_PLAYER && ((Creature*)this)->isPet()))
-        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT);
 }
 
 void Unit::ClearInCombat()
@@ -9655,12 +9664,22 @@ void Unit::ClearInCombat()
     m_CombatTimer = 0;
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
 
-    if(isCharmed() || (GetTypeId()!=TYPEID_PLAYER && ((Creature*)this)->isPet()))
-        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT);
-
     // Player's state will be cleared in Player::UpdateContestedPvP
     if(GetTypeId()!=TYPEID_PLAYER)
         clearUnitState(UNIT_STAT_ATTACK_PLAYER);
+
+    if(GetTypeId() != TYPEID_PLAYER && ((Creature*)this)->isPet())
+    {
+        if(Unit *owner = GetOwner())
+        {
+            for(int i = 0; i < MAX_MOVE_TYPE; ++i)
+                SetSpeed(UnitMoveType(i), owner->GetSpeedRate(UnitMoveType(i)), true);
+        }
+    }
+    else if(!isCharmed())
+        return;
+
+    RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT);
 }
 
 bool Unit::isTargetableForAttack() const
@@ -10217,8 +10236,17 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
         data << float(GetSpeed(mtype));
         SendMessageToSet( &data, true );
     }
-    if(Pet* pet = GetPet())
-        pet->SetSpeed(MOVE_RUN, m_speed_rate[mtype],forced);
+    if(GetPetGUID() && !isInCombat())
+        if(Pet* pet = GetPet())
+	if((GetTypeId()!=TYPEID_PLAYER && ((Creature*)this)->isPet()))
+		 pet->SetSpeed(mtype, m_speed_rate[mtype], forced);
+    //{
+        //pet->UpdateSpeed(MOVE_RUN, true);
+        //pet->UpdateSpeed(MOVE_SWIM, true);
+        //pet->UpdateSpeed(MOVE_FLIGHT, true);
+    //}
+    else if(!isCharmed())
+       return;  
 }
 
 void Unit::SetHover(bool on)
