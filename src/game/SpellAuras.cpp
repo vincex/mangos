@@ -371,7 +371,7 @@ m_periodicTimer(0), m_PeriodicEventId(0), m_AuraDRGroup(DIMINISHING_NONE)
                 }
             }
         }
-    }
+	}
 
     if(m_maxduration == -1 || m_isPassive && m_spellProto->DurationIndex == 0)
         m_permanent = true;
@@ -382,14 +382,18 @@ m_periodicTimer(0), m_PeriodicEventId(0), m_AuraDRGroup(DIMINISHING_NONE)
         modOwner->ApplySpellMod(GetId(), SPELLMOD_DURATION, m_maxduration);
 
     m_duration = m_maxduration;
-
-    if(modOwner)
+	if(modOwner)
         modOwner->ApplySpellMod(GetId(), SPELLMOD_ACTIVATION_TIME, m_periodicTimer);
-
     sLog.outDebug("Aura: construct Spellid : %u, Aura : %u Duration : %d Target : %d Damage : %d", m_spellProto->Id, m_spellProto->EffectApplyAuraName[eff], m_maxduration, m_spellProto->EffectImplicitTargetA[eff],damage);
 
     m_effIndex = eff;
-    SetModifier(AuraType(m_spellProto->EffectApplyAuraName[eff]), damage, m_spellProto->EffectAmplitude[eff], m_spellProto->EffectMiscValue[eff]);
+	uint32 pt = m_spellProto->EffectAmplitude[eff];
+	if(modOwner && IsChanneledSpell(m_spellProto)){
+		float spellHaste = modOwner->GetFloatValue(UNIT_MOD_CAST_SPEED);
+		m_duration *= spellHaste;
+		pt *= spellHaste;
+	}
+    SetModifier(AuraType(m_spellProto->EffectApplyAuraName[eff]), damage, pt, m_spellProto->EffectMiscValue[eff]);
 
     m_isDeathPersist = IsDeathPersistentSpell(m_spellProto);
 
@@ -597,8 +601,10 @@ void Aura::Update(uint32 diff)
                 ApplyModifier(true);
                 return;
             }
+
             // update before applying (aura can be removed in TriggerSpell or PeriodicTick calls)
             m_periodicTimer += m_modifier.periodictime;
+
 
             if(m_isTrigger)
                 TriggerSpell();

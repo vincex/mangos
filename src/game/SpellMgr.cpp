@@ -40,14 +40,20 @@ SpellMgr& SpellMgr::Instance()
     return spellMgr;
 }
 
-int32 GetSpellDuration(SpellEntry const *spellInfo)
+int32 GetSpellDuration(SpellEntry const *spellInfo, Spell const* spell)
 {
     if(!spellInfo)
         return 0;
     SpellDurationEntry const *du = sSpellDurationStore.LookupEntry(spellInfo->DurationIndex);
     if(!du)
         return 0;
-    return (du->Duration[0] == -1) ? -1 : abs(du->Duration[0]);
+	int32 duration = (du->Duration[0] == -1) ? -1 : abs(du->Duration[0]);
+	if(spell){
+		//if( !(spellInfo->Attributes & (SPELL_ATTR_UNK4|SPELL_ATTR_UNK5)) )
+		duration = int32(duration * spell->GetCaster()->GetFloatValue(UNIT_MOD_CAST_SPEED));
+	}
+    return duration;
+
 }
 
 int32 GetSpellMaxDuration(SpellEntry const *spellInfo)

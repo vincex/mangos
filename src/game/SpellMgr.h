@@ -268,7 +268,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell = NULL);
 inline float GetSpellMinRange(SpellRangeEntry const *range) { return (range ? range->minRange : 0); }
 inline float GetSpellMaxRange(SpellRangeEntry const *range) { return (range ? range->maxRange : 0); }
 inline uint32 GetSpellRecoveryTime(SpellEntry const *spellInfo) { return spellInfo->RecoveryTime > spellInfo->CategoryRecoveryTime ? spellInfo->RecoveryTime : spellInfo->CategoryRecoveryTime; }
-int32 GetSpellDuration(SpellEntry const *spellInfo);
+int32 GetSpellDuration(SpellEntry const *spellInfo, Spell const* spell = NULL);
 int32 GetSpellMaxDuration(SpellEntry const *spellInfo);
 
 inline bool IsSpellHaveEffect(SpellEntry const *spellInfo, SpellEffects effect)

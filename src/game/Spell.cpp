@@ -2320,7 +2320,7 @@ void Spell::handle_immediate()
     if(IsChanneledSpell(m_spellInfo))
     {
         m_spellState = SPELL_STATE_CASTING;
-        SendChannelStart(GetSpellDuration(m_spellInfo));
+        SendChannelStart(GetSpellDuration(m_spellInfo,this));
     }
 
     // process immediate effects (items, ground, etc.) also initialize some variables
