@@ -908,6 +908,26 @@ void Aura::_AddAura()
 
     Unit* caster = GetCaster();
 
+	if(caster)
+    {
+        if(GetId() == 12292)
+        {
+            //Rimuovo le aure di enrage(i vari rank) appena viene castato death wish
+            caster->RemoveAurasDueToSpell(14204);
+            caster->RemoveAurasDueToSpell(14203);
+            caster->RemoveAurasDueToSpell(14202);
+            caster->RemoveAurasDueToSpell(14201);
+            caster->RemoveAurasDueToSpell(12880);
+        }
+
+        if(GetSpellProto()->SpellIconID == 95 && GetSpellProto()->SpellVisual==2817)
+        {
+            //Cast dei vari rank di enrage. se il caster è sotto death wish non applichiamo l'effetto.
+            if(caster->HasAura(12292, 0))
+                return;
+        }    
+    }
+
     // passive auras (except totem auras) do not get placed in the slots
     // area auras with SPELL_AURA_NONE are not shown on target
     if((!m_isPassive || (caster && caster->GetTypeId() == TYPEID_UNIT && ((Creature*)caster)->isTotem())) &&
