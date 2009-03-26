@@ -2139,7 +2139,14 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 
                     // final heal
                     if(m_target->IsInWorld())
+					{
                         m_target->CastCustomSpell(m_target,33778,&m_modifier.m_amount,NULL,NULL,true,NULL,this,GetCasterGUID());
+						if(m_target->HasAura(33776))
+                        {
+                                int32 basepoints0 = (m_modifier.m_amount/10);
+                                m_target->CastCustomSpell(m_target, 31786,&basepoints0,NULL,NULL,true);
+                        }
+					}
                 }
                 return;
             }
@@ -5842,6 +5849,15 @@ void Aura::PeriodicTick()
             // ignore item heals
 //            if(procSpell && !haveCastItem)
 //                pCaster->ProcDamageAndSpell(target, procAttacker, procVictim, PROC_EX_NORMAL_HIT, pdamage, BASE_ATTACK, spellProto);
+
+			if(target)
+            {
+                if(target->HasAura(33776))
+                {
+                    int32 basepoints0 = (pdamage/10)+1;
+                    target->CastCustomSpell(target, 31786,&basepoints0,NULL,NULL,true);
+                }
+            }
             break;
         }
         case SPELL_AURA_PERIODIC_MANA_LEECH:
