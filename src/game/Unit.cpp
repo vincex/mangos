@@ -3644,7 +3644,11 @@ uint32 Unit::GetWeaponSkillValue (WeaponAttackType attType, Unit const* target) 
 
         // feral or unarmed skill only for base attack
         if(attType != BASE_ATTACK && !item )
+		{
+			if(attType == RANGED_ATTACK && getClass() == CLASS_PALADIN) //hammer
+				return GetMaxSkillValueForLevel();
             return 0;
+		}
 
         if(((Player*)this)->IsInFeralForm())
             return GetMaxSkillValueForLevel();              // always maximized SKILL_FERAL_COMBAT in fact
