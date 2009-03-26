@@ -1937,7 +1937,7 @@ void Spell::EffectTeleportUnits(uint32 i)
             else
                 pTarget = m_caster->getVictim();
             // No target present - return
-            if (!pTarget)
+            if ((!pTarget) || (pTarget->IsFriendlyTo(m_caster)))
                 return;
             // Init dest coordinates
             uint32 mapid = m_caster->GetMapId();
