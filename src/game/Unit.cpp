@@ -778,6 +778,12 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
                 //else if(GetTypeId() == TYPEID_UNIT)
                 //    bg->HandleKillPlayer(killed,(Creature*)this);
         }
+        else if(pVictim->GetTypeId() == TYPEID_UNIT)
+        {
+            if(player)
+                if(BattleGround *bg = player->GetBattleGround())
+                    bg->HandleKillUnit((Creature*)pVictim,player);
+        }
     }
     else                                                    // if (health <= damage)
     {
@@ -3217,7 +3223,7 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell)
     if (roll < tmp)
         return SPELL_MISS_MISS;
 
-	int32 resist_mech = 5;
+    int32 resist_mech = 0;
     // Get effects mechanic and chance
     for(int eff = 0; eff < 3; ++eff)
     {
@@ -9055,6 +9061,10 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
     // These Spells are doing fixed amount of healing (TODO found less hack-like check)
 	switch (spellProto->SpellFamilyName){
 		case SPELLFAMILY_GENERIC:
+		        if (spellProto->Id == 27031 || spellProto->Id == 27030)
+			    break;
+			return healamount;
+			break;
 		case SPELLFAMILY_POTION:
 			return healamount;
 			break;

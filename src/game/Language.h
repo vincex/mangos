@@ -678,6 +678,43 @@ enum MangosStrings
     LANG_DIST_ARENA_POINTS_END          = 746,
     // Room for batleground/arena strings 747-799 not used
 
+    LANG_BG_AV_ALLY                     = 747,
+    LANG_BG_AV_HORDE                    = 748,
+    LANG_BG_AV_TOWER_TAKEN              = 749,
+    LANG_BG_AV_TOWER_ASSAULTED          = 750,
+    LANG_BG_AV_TOWER_DEFENDED           = 751,
+    LANG_BG_AV_GRAVE_TAKEN              = 752,
+    LANG_BG_AV_GRAVE_DEFENDED           = 753,
+    LANG_BG_AV_GRAVE_ASSAULTED          = 754,
+    LANG_BG_AV_MINE_TAKEN               = 755,
+    LANG_BG_AV_MINE_NORTH               = 756,
+    LANG_BG_AV_MINE_SOUTH               = 757,
+
+    LANG_BG_AV_NODE_GRAVE_STORM_AID     = 758,
+    LANG_BG_AV_NODE_TOWER_DUN_S         = 759,
+    LANG_BG_AV_NODE_TOWER_DUN_N         = 760,
+    LANG_BG_AV_NODE_GRAVE_STORMPIKE     = 761,
+    LANG_BG_AV_NODE_TOWER_ICEWING       = 762,
+    LANG_BG_AV_NODE_GRAVE_STONE         = 763,
+    LANG_BG_AV_NODE_TOWER_STONE         = 764,
+    LANG_BG_AV_NODE_GRAVE_SNOW          = 765,
+    LANG_BG_AV_NODE_TOWER_ICE           = 766,
+    LANG_BG_AV_NODE_GRAVE_ICE           = 767,
+    LANG_BG_AV_NODE_TOWER_POINT         = 768,
+    LANG_BG_AV_NODE_GRAVE_FROST         = 769,
+    LANG_BG_AV_NODE_TOWER_FROST_E       = 770,
+    LANG_BG_AV_NODE_TOWER_FROST_W       = 771,
+    LANG_BG_AV_NODE_GRAVE_FROST_HUT     = 772,
+
+    LANG_BG_AV_ONEMINTOSTART            = 773,
+    LANG_BG_AV_HALFMINTOSTART           = 774,
+    LANG_BG_AV_STARTED                  = 775,
+    LANG_BG_AV_A_NEAR_LOSE              = 776,
+    LANG_BG_AV_H_NEAR_LOSE              = 777,
+    LANG_BG_AV_H_CAPTAIN_DEAD           = 778,
+    LANG_BG_AV_A_CAPTAIN_DEAD           = 779,
+    // Room for batleground/arena strings 780-799 not used
+
     // in game strings
     //                                  = 800, not used
     LANG_NOT_ENOUGH_GOLD                = 801,

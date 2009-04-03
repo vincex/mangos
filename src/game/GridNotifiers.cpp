@@ -62,7 +62,7 @@ VisibleNotifier::Visit(PlayerMapType &m)
             continue;
 
         iter->getSource()->UpdateVisibilityOf(&i_player);
-        i_player.UpdateVisibilityOf(iter->getSource(),i_data,i_data_updates,i_visibleNow);
+	i_player.UpdateVisibilityOf(iter->getSource(),i_data,i_data_updates,i_visibleNow);
         i_clientGUIDs.erase(iter->getSource()->GetGUID());
     }
 }
@@ -79,7 +79,7 @@ VisibleNotifier::Notify()
             if(i_clientGUIDs.find((*itr)->GetGUID())!=i_clientGUIDs.end())
             {
                 (*itr)->UpdateVisibilityOf(&i_player);
-                i_player.UpdateVisibilityOf((*itr),i_data,i_data_updates,i_visibleNow);
+		i_player.UpdateVisibilityOf((*itr),i_data,i_data_updates,i_visibleNow);
                 i_clientGUIDs.erase((*itr)->GetGUID());
             }
         }
