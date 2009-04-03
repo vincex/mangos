@@ -9309,6 +9309,13 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
             pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, t );
             if( pBag )
             {
+
+				pBagProto = pBag->GetProto();
+
+                // special bag already checked
+                if( pBagProto && (pBagProto->Class != ITEM_CLASS_CONTAINER || pBagProto->SubClass != ITEM_SUBCLASS_CONTAINER))
+                    continue;
+				
                 for(uint32 j = 0; j < pBag->GetBagSize(); j++)
                 {
                     if( inv_bags[t-INVENTORY_SLOT_BAG_START][j] == 0 )
@@ -14120,15 +14127,15 @@ void Player::_LoadAuras(QueryResult *result, uint32 timediff)
             else
                 remaincharges = -1;
 
-            //do not load single target auras (unless they were cast by the player)
-            if (caster_guid != GetGUID() && IsSingleTargetSpell(spellproto))
-                continue;
-
             for(uint32 i=0; i<stackcount; i++)
             {
                 Aura* aura = CreateAura(spellproto, effindex, NULL, this, NULL);
                 if(!damage)
                     damage = aura->GetModifier()->m_amount;
+
+				if (caster_guid != GetGUID() && aura->IsSingleTarget())
+                    aura->SetIsSingleTarget(false);
+
                 aura->SetLoadedState(caster_guid,damage,maxduration,remaintime,remaincharges);
                 AddAura(aura);
                 sLog.outDetail("Added aura spellid %u, effect %u", spellproto->Id, effindex);
@@ -14723,6 +14730,14 @@ void Player::_LoadBoundInstances(QueryResult *result)
             // so the value read from the DB may be wrong here but only if the InstanceSave is loaded
             // and in that case it is not used
 
+			MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
+            if(!mapEntry || !mapEntry->IsDungeon())
+            {
+                sLog.outError("_LoadBoundInstances: player %s(%d) has bind to not existed or not dungeon map %d", GetName(), GetGUIDLow(), mapId);
+                CharacterDatabase.PExecute("DELETE FROM character_instance WHERE guid = '%d' AND instance = '%d'", GetGUIDLow(), instanceId);
+                continue;
+            }
+			
             if(!perm && group)
             {
                 sLog.outError("_LoadBoundInstances: player %s(%d) is in group %d but has a non-permanent character bind to map %d,%d,%d", GetName(), GetGUIDLow(), GUID_LOPART(group->GetLeaderGUID()), mapId, instanceId, difficulty);
@@ -15198,7 +15213,7 @@ void Player::_SaveAuras()
             if (!(itr2->second->IsPassive() || itr2->second->IsRemovedOnShapeLost()))
             {
                 //do not save single target auras (unless they were cast by the player)
-                if (!(itr2->second->GetCasterGUID() != GetGUID() && IsSingleTargetSpell(spellInfo)))
+                if (!(itr2->second->GetCasterGUID() != GetGUID() && itr2->second->IsSingleTarget()))
                 {
                     uint8 i;
                     // or apply at cast SPELL_AURA_MOD_SHAPESHIFT or SPELL_AURA_MOD_STEALTH auras

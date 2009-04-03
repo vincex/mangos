@@ -4255,7 +4255,7 @@ bool Unit::AddAura(Aura *Aur)
     }
 
     // update single target auras list (before aura add to aura list, to prevent unexpected remove recently added aura)
-    if (IsSingleTargetSpell(aurSpellInfo) && Aur->GetTarget())
+    if (Aur->IsSingleTarget() && Aur->GetTarget())
     {
         // caster pointer can be deleted in time aura remove, find it by guid at each iteration
         for(;;)
@@ -4527,9 +4527,7 @@ void Unit::RemoveAurasDueToSpellBySteal(uint32 spellId, uint64 casterGUID, Unit 
         {
             int32 basePoints = aur->GetBasePoints();
             // construct the new aura for the attacker
-            Aura * new_aur = CreateAura(aur->GetSpellProto(), aur->GetEffIndex(), &basePoints, stealer);
-            if(!new_aur)
-                continue;
+            Aura * new_aur = CreateAura(aur->GetSpellProto(), aur->GetEffIndex(), &basePoints, stealer, this);
 
             // set its duration and maximum duration
             // max duration 2 minutes (in msecs)
@@ -4537,6 +4535,9 @@ void Unit::RemoveAurasDueToSpellBySteal(uint32 spellId, uint64 casterGUID, Unit 
             const int32 max_dur = 2*MINUTE*1000;
             new_aur->SetAuraMaxDuration( max_dur > dur ? dur : max_dur );
             new_aur->SetAuraDuration( max_dur > dur ? dur : max_dur );
+
+			aur->UnregisterSingleCastAura();
+			new_aur->SetIsSingleTarget(false);
 
             // add the new aura to stealer
             stealer->AddAura(new_aur);
@@ -4655,21 +4656,7 @@ void Unit::RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode)
     Aura* Aur = i->second;
     SpellEntry const* AurSpellInfo = Aur->GetSpellProto();
 
-    Unit* caster = NULL;
-    if (IsSingleTargetSpell(AurSpellInfo))
-    {
-        caster = Aur->GetCaster();
-        if(caster)
-        {
-            AuraList& scAuras = caster->GetSingleCastAuras();
-            scAuras.remove(Aur);
-        }
-        else
-        {
-            sLog.outError("Couldn't find the caster of the single target aura, may crash later!");
-            assert(false);
-        }
-    }
+    Aur->UnregisterSingleCastAura();
 
     // remove from list before mods removing (prevent cyclic calls, mods added before including to aura list - use reverse order)
     if (Aur->GetModifier()->m_auraname < TOTAL_AURAS)
@@ -4689,8 +4676,7 @@ void Unit::RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode)
     bool caster_channeled = false;
     if(IsChanneledSpell(AurSpellInfo))
     {
-        if(!caster)                                         // can be already located for IsSingleTargetSpell case
-            caster = Aur->GetCaster();
+        Unit* caster = Aur->GetCaster();
 
         if(caster)
         {
@@ -4817,7 +4803,7 @@ void Unit::RemoveDynObject(uint32 spellid)
         return;
     for (DynObjectGUIDs::iterator i = m_dynObjGUIDs.begin(); i != m_dynObjGUIDs.end();)
     {
-        DynamicObject* dynObj = ObjectAccessor::GetDynamicObject(*this,*m_dynObjGUIDs.begin());
+        DynamicObject* dynObj = ObjectAccessor::GetDynamicObject(*this,*i);
         if(!dynObj)
         {
             i = m_dynObjGUIDs.erase(i);
@@ -4847,7 +4833,7 @@ DynamicObject * Unit::GetDynObject(uint32 spellId, uint32 effIndex)
 {
     for (DynObjectGUIDs::iterator i = m_dynObjGUIDs.begin(); i != m_dynObjGUIDs.end();)
     {
-        DynamicObject* dynObj = ObjectAccessor::GetDynamicObject(*this,*m_dynObjGUIDs.begin());
+        DynamicObject* dynObj = ObjectAccessor::GetDynamicObject(*this,*i);
         if(!dynObj)
         {
             i = m_dynObjGUIDs.erase(i);
@@ -4865,7 +4851,7 @@ DynamicObject * Unit::GetDynObject(uint32 spellId)
 {
     for (DynObjectGUIDs::iterator i = m_dynObjGUIDs.begin(); i != m_dynObjGUIDs.end();)
     {
-        DynamicObject* dynObj = ObjectAccessor::GetDynamicObject(*this,*m_dynObjGUIDs.begin());
+        DynamicObject* dynObj = ObjectAccessor::GetDynamicObject(*this,*i);
         if(!dynObj)
         {
             i = m_dynObjGUIDs.erase(i);
@@ -4890,15 +4876,23 @@ void Unit::RemoveGameObject(GameObject* gameObj, bool del)
 {
     assert(gameObj && gameObj->GetOwnerGUID()==GetGUID());
 
+	gameObj->SetOwnerGUID(0);
+	
     // GO created by some spell
-    if ( GetTypeId()==TYPEID_PLAYER && gameObj->GetSpellId() )
+    if (uint32 spellid = gameObj->GetSpellId())
     {
-        SpellEntry const* createBySpell = sSpellStore.LookupEntry(gameObj->GetSpellId());
-        // Need activate spell use for owner
-        if (createBySpell && createBySpell->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE)
-            ((Player*)this)->SendCooldownEvent(createBySpell);
+		RemoveAurasDueToSpell(spellid);
+
+        if (GetTypeId()==TYPEID_PLAYER)
+        {
+            SpellEntry const* createBySpell = sSpellStore.LookupEntry(spellid );
+            // Need activate spell use for owner
+            if (createBySpell && createBySpell->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE)
+                // note: item based cooldowns and cooldown spell mods with charges ignored (unknown existed cases)
+                ((Player*)this)->SendCooldownEvent(createBySpell);
+        }
     }
-    gameObj->SetOwnerGUID(0);
+
     m_gameObj.remove(gameObj);
     if(del)
     {
