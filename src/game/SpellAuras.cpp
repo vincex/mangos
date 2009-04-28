@@ -3415,11 +3415,7 @@ void Aura::HandleInvisibility(bool apply, bool Real)
         {
             // apply glow vision
             m_target->SetFlag(PLAYER_FIELD_BYTES2,PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
-
-            // drop flag at invisible in bg
-            if(((Player*)m_target)->InBattleGround())
-                if(BattleGround *bg = ((Player*)m_target)->GetBattleGround())
-                    bg->EventPlayerDroppedFlag((Player*)m_target);
+            m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LOST_SELECTION);
         }
 
         // apply only if not in GM invisibility and not stealth
@@ -3906,6 +3902,9 @@ void Aura::HandleAuraModStateImmunity(bool apply, bool Real)
 
 void Aura::HandleAuraModSchoolImmunity(bool apply, bool Real)
 {
+    if(apply && m_modifier.m_miscvalue == SPELL_SCHOOL_MASK_NORMAL)
+        m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LOST_SELECTION);
+		
     m_target->ApplySpellImmune(GetId(),IMMUNITY_SCHOOL,m_modifier.m_miscvalue,apply);
 
     if(Real && apply && GetSpellProto()->AttributesEx & SPELL_ATTR_EX_DISPEL_AURAS_ON_IMMUNITY)
@@ -5454,7 +5453,10 @@ void Aura::HandleAuraRetainComboPoints(bool apply, bool Real)
 void Aura::HandleModUnattackable( bool Apply, bool Real )
 {
     if(Real && Apply)
+    {
         m_target->CombatStop();
+        m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LOST_SELECTION);
+    }
 
     m_target->ApplyModFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE,Apply);
 }
