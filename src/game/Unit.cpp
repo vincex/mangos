@@ -8832,6 +8832,8 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
         case SPELLFAMILY_WARRIOR:
         case SPELLFAMILY_HUNTER:
         case SPELLFAMILY_ROGUE:
+		case SPELLFAMILY_GENERIC:
+		case SPELLFAMILY_POTION:
             CastingTime = 0;
             break;
         default:
@@ -9049,9 +9051,15 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
     // Healing Done
 
     // These Spells are doing fixed amount of healing (TODO found less hack-like check)
-    if (spellProto->Id == 15290 || spellProto->Id == 39373 ||
-        spellProto->Id == 33778 || spellProto->Id == 379   ||
-        spellProto->Id == 38395 || spellProto->Id == 40972)
+	switch (spellProto->SpellFamilyName){
+		case SPELLFAMILY_GENERIC:
+		case SPELLFAMILY_POTION:
+			return healamount;
+			break;
+		default: break;
+	}
+	if (spellProto->Id == 33778 || spellProto->Id == 379   ||
+        spellProto->Id == 38395)
         return healamount;
 
     int32 AdvertisedBenefit = SpellBaseHealingBonus(GetSpellSchoolMask(spellProto));
