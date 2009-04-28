@@ -4979,6 +4979,53 @@ void Spell::EffectSummonPlayer(uint32 /*i*/)
     if(unitTarget->GetDummyAura(23445))
         return;
 
+//Summon in instance without prereq
+	Player* player = (Player*)unitTarget;
+	if (m_caster->GetMap()->IsDungeon()){
+		QueryResult *result = WorldDatabase.PQuery("SELECT id FROM areatrigger_teleport WHERE target_map = %u",m_caster->GetMapId());
+		if (result){
+			do
+			{
+				Field *fields = result->Fetch();
+				uint32 TRIGGER_ID = fields[0].GetUInt32();
+				AreaTrigger const* at = objmgr.GetAreaTrigger(TRIGGER_ID);
+				if (at){
+					if(!player->isGameMaster()){
+						//Level
+						if(player->getLevel() < at->requiredLevel && !sWorld.getConfig(CONFIG_INSTANCE_IGNORE_LEVEL))
+							return;
+						//Item
+						if(at->requiredItem)
+						{
+							if(!player->HasItemCount(at->requiredItem, 1) &&
+							(!at->requiredItem2 || !player->HasItemCount(at->requiredItem2, 1)))
+								return;
+						}else if(at->requiredItem2 && !player->HasItemCount(at->requiredItem2, 1))
+							return;
+						//Key
+						if(player->GetDifficulty() == DIFFICULTY_HEROIC)
+						{
+							if(at->heroicKey)
+							{
+								if(!player->HasItemCount(at->heroicKey, 1) &&
+								(!at->heroicKey2 || !player->HasItemCount(at->heroicKey2, 1)))
+									return;
+							}
+							else if(at->heroicKey2 && !player->HasItemCount(at->heroicKey2, 1))
+								return;
+						}
+						//Quest
+						if(at->requiredQuest && !player->GetQuestRewardStatus(at->requiredQuest))
+							return;
+
+
+					}
+				}
+			}while(result->NextRow());
+		}
+		delete result;
+	}
+
     float x,y,z;
     m_caster->GetClosePoint(x,y,z,unitTarget->GetObjectSize());
 
