@@ -802,16 +802,35 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, uint32 queue_id, uin
 
         std::list<GroupQueueInfo* >::iterator itr;
 
+		//Tankk
+		uint32 uQueuedHorde    = m_SelectionPools[NORMAL_HORDE].SelectedGroups.size();
+		uint32 uQueuedAlliance = m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.size();
+		uint32 uMaxBgPlayers = 0;
+		unit32 uBgPlayersInvited = 0;
+				
+		if(uQueuedHorde <= uQueuedAlliance)
+			uMaxBgPlayers = uQueuedHorde;
+		else
+			uMaxBgPlayers = uQueuedAlliance;
         // invite groups from horde selection pool
         for(itr = m_SelectionPools[NORMAL_HORDE].SelectedGroups.begin(); itr != m_SelectionPools[NORMAL_HORDE].SelectedGroups.end(); ++itr)
         {
-            InviteGroupToBG((*itr),bg2,HORDE);
+			if(!bg2->IsArena() && uBgPlayersInvited<=uMaxBgPlayers)
+			{
+            	InviteGroupToBG((*itr),bg2,HORDE);
+				uBgPlayersInvited++;
+			}
         }
 
+		uBgPlayersInvited = 0;
         // invite groups from ally selection pools
         for(itr = m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.begin(); itr != m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.end(); ++itr)
         {
-            InviteGroupToBG((*itr),bg2,ALLIANCE);
+			if(!bg2->IsArena() && uBgPlayersInvited<=uMaxBgPlayers)
+			{
+            	InviteGroupToBG((*itr),bg2,ALLIANCE);
+				uBgPlayersInvited++;
+			}
         }
 
         if (isRated)
