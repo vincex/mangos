@@ -10554,8 +10554,10 @@ int32 Unit::CalculateSpellDuration(SpellEntry const* spellProto, uint8 effect_in
         else
             durationMod = durationMod_always;
 
-        if (durationMod != 0)
-            duration = int32(int64(duration) * (100+durationMod) /100);
+		if (durationMod != 0){
+			int32 reduction = (100+durationMod);
+            duration = (int32)(duration * reduction /100);
+		}
 
         if (duration < 0) duration = 0;
     }
