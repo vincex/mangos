@@ -809,15 +809,26 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, uint32 queue_id, uin
 		uint32 uBgPlayersInvited = 0;
 				
 		if(uQueuedHorde <= uQueuedAlliance)
+		{
 			uMaxBgPlayers = uQueuedHorde;
+		}
 		else
+		{
 			uMaxBgPlayers = uQueuedAlliance;
+		}
         // invite groups from horde selection pool
         for(itr = m_SelectionPools[NORMAL_HORDE].SelectedGroups.begin(); itr != m_SelectionPools[NORMAL_HORDE].SelectedGroups.end(); ++itr)
         {
-			if(!bg2->isArena() && uBgPlayersInvited<=uMaxBgPlayers)
+			if(bg2->isArena())
 			{
-            	InviteGroupToBG((*itr),bg2,HORDE);
+				InviteGroupToBG((*itr),bg2,HORDE);
+			}
+			else
+			{
+				if(uBgPlayersInvited<=uMaxBgPlayers)
+				{
+					InviteGroupToBG((*itr),bg2,HORDE);
+				}
 				uBgPlayersInvited++;
 			}
         }
@@ -826,9 +837,16 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, uint32 queue_id, uin
         // invite groups from ally selection pools
         for(itr = m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.begin(); itr != m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.end(); ++itr)
         {
-			if(!bg2->isArena() && uBgPlayersInvited<=uMaxBgPlayers)
+			if(bg2->isArena())
 			{
-            	InviteGroupToBG((*itr),bg2,ALLIANCE);
+				InviteGroupToBG((*itr),bg2,ALLIANCE);
+			}
+			else
+			{
+				if(uBgPlayersInvited<=uMaxBgPlayers)
+				{
+					InviteGroupToBG((*itr),bg2,ALLIANCE);
+				}
 				uBgPlayersInvited++;
 			}
         }
