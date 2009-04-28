@@ -806,7 +806,7 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, uint32 queue_id, uin
 		uint32 uQueuedHorde    = m_SelectionPools[NORMAL_HORDE].SelectedGroups.size();
 		uint32 uQueuedAlliance = m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.size();
 		uint32 uMaxBgPlayers = 0;
-		unit32 uBgPlayersInvited = 0;
+		uint32 uBgPlayersInvited = 0;
 				
 		if(uQueuedHorde <= uQueuedAlliance)
 			uMaxBgPlayers = uQueuedHorde;
@@ -815,7 +815,7 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, uint32 queue_id, uin
         // invite groups from horde selection pool
         for(itr = m_SelectionPools[NORMAL_HORDE].SelectedGroups.begin(); itr != m_SelectionPools[NORMAL_HORDE].SelectedGroups.end(); ++itr)
         {
-			if(!bg2->IsArena() && uBgPlayersInvited<=uMaxBgPlayers)
+			if(!bg2->isArena() && uBgPlayersInvited<=uMaxBgPlayers)
 			{
             	InviteGroupToBG((*itr),bg2,HORDE);
 				uBgPlayersInvited++;
@@ -826,7 +826,7 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, uint32 queue_id, uin
         // invite groups from ally selection pools
         for(itr = m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.begin(); itr != m_SelectionPools[NORMAL_ALLIANCE].SelectedGroups.end(); ++itr)
         {
-			if(!bg2->IsArena() && uBgPlayersInvited<=uMaxBgPlayers)
+			if(!bg2->isArena() && uBgPlayersInvited<=uMaxBgPlayers)
 			{
             	InviteGroupToBG((*itr),bg2,ALLIANCE);
 				uBgPlayersInvited++;
