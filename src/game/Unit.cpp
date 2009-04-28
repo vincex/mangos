@@ -9090,6 +9090,10 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
     // These Spells are doing fixed amount of healing (TODO found less hack-like check)
 	switch (spellProto->SpellFamilyName){
 		case SPELLFAMILY_GENERIC:
+			if (spellProto->Id == 27031 || spellProto->Id == 27030)
+				break;
+			return healamount;
+			break;
 		case SPELLFAMILY_POTION:
 			return healamount;
 			break;
