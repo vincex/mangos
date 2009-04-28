@@ -1354,6 +1354,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     (spellInfo_2->SpellFamilyFlags == 0x0 && spellInfo_2->SpellIconID == 108) && (spellInfo_1->SpellFamilyFlags & 0x20000000000000LL) )
                     return false;
 
+				//lacerate dot && moonfire dot
+				if( (spellInfo_1->SpellVisual == 1263 && spellInfo_1->SpellIconID == 225) && (spellId_2 == 33745) ||
+				    (spellInfo_2->SpellVisual == 1263 && spellInfo_2->SpellIconID == 225) && (spellId_1 == 33745))
+				    return false;
+
                 //  Tree of Life (Shapeshift) and 34123 Tree of Life (Passive)
                 if ((spellId_1 == 33891 && spellId_2 == 34123) ||
                     (spellId_2 == 33891 && spellId_1 == 34123))
