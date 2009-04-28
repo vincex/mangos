@@ -2741,6 +2741,8 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
     {
         m_currentSpells[CURRENT_MELEE_SPELL]->cast();
 
+		extraAttacks = m_extraAttacks;
+
         // not recent extra attack only at any non extra attack (melee spell case)
         if(!extra && extraAttacks)
         {
@@ -2772,6 +2774,7 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
     if(pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->AI())
         ((Creature*)pVictim)->AI()->AttackedBy(this);
 
+	extraAttacks = m_extraAttacks;
     // extra attack only at any non extra attack (normal case)
     if(!extra && extraAttacks)
     {
