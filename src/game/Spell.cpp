@@ -3502,6 +3502,14 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
     }
 
+	if(m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER)
+	{
+		if (m_spellInfo->SpellFamilyFlags & 0x000020000000001CLL)
+		{
+			return SPELL_CAST_OK;
+		}
+	}
+
     if(!m_IsTriggeredSpell)
     {
         SpellCastResult castResult = CheckRange(strict);
