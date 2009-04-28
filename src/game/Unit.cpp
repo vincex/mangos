@@ -461,6 +461,20 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
     if (!pVictim->isAlive() || pVictim->isInFlight() || pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode())
         return 0;
 
+  	//remove SPELL_INTERRUPT_FLAG_DIRECT_DAMAGE
+    if (pVictim->GetTypeId() == TYPEID_PLAYER && (damagetype == DIRECT_DAMAGE || damagetype == SPELL_DIRECT_DAMAGE))
+	{
+        for (uint32 i = CURRENT_FIRST_NON_MELEE_SPELL; i < CURRENT_MAX_SPELL; i++)
+        {
+            if (pVictim->m_currentSpells[i])
+            {
+                // check if we can interrupt spell
+                if ( pVictim->m_currentSpells[i]->m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_DIRECT_DAMAGE )
+                    pVictim->InterruptSpell(i,false);
+            }
+		}
+	}
+	
     //You don't lose health from damage taken from another player while in a sanctuary
     //You still see it in the combat log though
     if(pVictim != this && GetTypeId() == TYPEID_PLAYER && pVictim->GetTypeId() == TYPEID_PLAYER)
