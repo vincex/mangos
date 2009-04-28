@@ -1477,6 +1477,22 @@ bool Player::ToggleDND()
     return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_DND);
 }
 
+bool Player::IsCastingSpell() const
+{
+    // currently casted spells can be dependent from item
+    for (uint32 i = 0; i < CURRENT_MAX_SPELL; i++)
+    {
+        if(m_currentSpells[i] && m_currentSpells[i]->getState()==SPELL_STATE_PREPARING)
+		{
+		m_currentSpells[i]->cancel();
+        return true;
+		}
+		else if (m_currentSpells[i] && m_currentSpells[i]->getState()!=SPELL_STATE_PREPARING)
+		return false;
+    }
+	return 0;
+}
+
 uint8 Player::chatTag() const
 {
     // it's bitmask

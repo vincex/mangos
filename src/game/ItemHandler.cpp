@@ -86,6 +86,10 @@ void WorldSession::HandleSwapInvItemOpcode( WorldPacket & recv_data )
         _player->SendEquipError( EQUIP_ERR_ITEM_DOESNT_GO_TO_SLOT, NULL, NULL );
         return;
     }
+	if (_player->IsCastingSpell())
+	{
+		_player->SendEquipError(EQUIP_ERR_ITEMS_CANT_BE_SWAPPED, NULL, NULL );
+	}
 
     uint16 src = ( (INVENTORY_SLOT_BAG_0 << 8) | srcslot );
     uint16 dst = ( (INVENTORY_SLOT_BAG_0 << 8) | dstslot );
@@ -141,6 +145,10 @@ void WorldSession::HandleSwapItem( WorldPacket & recv_data )
         _player->SendEquipError( EQUIP_ERR_ITEM_DOESNT_GO_TO_SLOT, NULL, NULL );
         return;
     }
+	if (_player->IsCastingSpell())
+	{
+		_player->SendEquipError(EQUIP_ERR_ITEMS_CANT_BE_SWAPPED, NULL, NULL );
+	}
 
     _player->SwapItem( src, dst );
 }
