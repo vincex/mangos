@@ -684,7 +684,7 @@ void WorldSession::HandleBattleGroundArenaJoin( WorldPacket & recv_data )
             break;
         case 2:
             arenatype = ARENA_TYPE_5v5;
-            break;
+			return;
         default:
             sLog.outError("Unknown arena type %u at HandleBattleGroundArenaJoin()", type);
             return;
