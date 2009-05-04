@@ -381,6 +381,8 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
                     break;
                 case SPELL_AURA_PROC_TRIGGER_SPELL:
                     // many positive auras have negative triggered spells at damage for example and this not make it negative (it can be canceled for example)
+					if (spellproto->SpellIconID==45)  // impact
+						return true;
                     break;
                 case SPELL_AURA_MOD_STUN:                   //have positive and negative spells, we can't sort its correctly at this moment.
                     if(effIndex==0 && spellproto->Effect[1]==0 && spellproto->Effect[2]==0)
@@ -1192,7 +1194,20 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     if( (spellInfo_1->Id == 23170 && spellInfo_2->Id == 23171) ||
                         (spellInfo_2->Id == 23170 && spellInfo_1->Id == 23171) )
                         return false;
-
+						
+                    // Death Wish and Lust for Battle (trinket Bloodlust Brooch)
+                     if( spellInfo_2->Id == 35166 && spellInfo_1->Id == 12292 ||
+                         spellInfo_1->Id == 35166 && spellInfo_2->Id == 12292 )
+                        return false;
+					
+                    // Shadow Ward and Orb Of Deception
+                    if( spellInfo_1->SpellIconID==207 && spellInfo_2->SpellIconID==207)
+                        return false;
+					   
+                    // Blood Fury(orc racial) and Rage of the Unraveller (trinket Hourglass of the Unraveller)
+                    if( spellInfo_1->Id == 20572 || spellInfo_1->Id == 33697 && spellInfo_2->Id == 33649 ||
+                        spellInfo_2->Id == 20572 || spellInfo_2->Id == 33697 && spellInfo_1->Id == 33649)
+                        return false;
                     break;
                 }
                 case SPELLFAMILY_WARRIOR:
@@ -1250,6 +1265,24 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     break;
                 }
+                case SPELLFAMILY_PRIEST:
+                {
+                    //Shadow Ward or Orb Of Deception and Shadow Protection
+                    if( spellInfo_2->SpellIconID==207 && spellInfo_2->SpellVisual==27 && spellInfo_1->SpellIconID==207)
+                        return false;
+                    // Renewal (Priest Set T4 bonus 1) and Renew
+                    if( spellInfo_1->Id == 37563 && spellInfo_2->SpellIconID==321 && spellInfo_2->SpellVisual==280)
+                        return false;	
+
+                    break;
+                }
+                case SPELLFAMILY_WARLOCK:
+                {
+                    //Tainted Blood and Health Funnel
+                    if( spellInfo_2->SpellIconID==153 && spellInfo_2->SpellVisual==163 && spellInfo_1->SpellIconID==153)
+                       return false;
+                    break;
+                }
             }
             // Dragonmaw Illusion, Blood Elf Illusion, Human Illusion, Illidari Agent Illusion, Scarlet Crusade Disguise
             if(spellInfo_1->SpellIconID == 1691 && spellInfo_2->SpellIconID == 1691)
@@ -1275,7 +1308,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Combustion and Fire Protection Aura (multi-family check)
             if( spellInfo_1->Id == 11129 && spellInfo_2->SpellIconID == 33 && spellInfo_2->SpellVisual == 321 )
                 return false;
-
+				
+            // Arcane Power and Innervate
+            if( spellInfo_1->Id == 12042 && spellInfo_2->Id == 29166)
+                return false;
             break;
         case SPELLFAMILY_WARLOCK:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_WARLOCK )
@@ -1345,6 +1381,19 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     (spellInfo_2->SpellFamilyFlags & 0x200000) && (spellInfo_1->SpellFamilyFlags & 0x8000) )
                     return false;
             }
+            
+            // Abolish Disease and Mind-Numbing Poison
+            if( spellInfo_1->Id == 552  && spellInfo_2->SpellIconID == 264 && spellInfo_2->SpellVisual == 5100)				
+                return false;	
+		
+            //Shadow Ward or Orb Of Deception and Shadow Protection
+            if( spellInfo_1->SpellIconID==207 && spellInfo_1->SpellVisual==27 && spellInfo_2->SpellIconID==207)
+                return false;	
+
+            // Renewal (Priest Set T4 bonus 1) and Renew
+            if( spellInfo_2->Id == 37563 && spellInfo_1->SpellIconID==321 && spellInfo_1->SpellVisual==280)
+                return false;
+
             break;
         case SPELLFAMILY_DRUID:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_DRUID )
@@ -1385,6 +1434,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             if (spellId_1 == 42016 && spellId_2 == 40216 )
                 return false;
 
+            // Arcane Power and Innervate
+            if( spellInfo_2->Id == 12042 && spellInfo_1->Id == 29166)
+                return false;	
+
             break;
         case SPELLFAMILY_ROGUE:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_ROGUE )
@@ -1397,7 +1450,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Garrote -> Garrote-Silence (multi-family check)
             if( spellInfo_1->SpellIconID == 498 && spellInfo_2->SpellIconID == 498 && spellInfo_2->SpellVisual == 0 )
                 return false;
-            break;
+
+            // Mind-Numbing Poison and Abolish Disease
+            if( spellInfo_2->Id == 552  && spellInfo_1->SpellIconID == 264 && spellInfo_1->SpellVisual == 5100)				
+                return false;
+            break;			
         case SPELLFAMILY_HUNTER:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_HUNTER )
             {
@@ -1423,6 +1480,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Concussive Shot and Imp. Concussive Shot (multi-family check)
             if( spellInfo_2->Id == 19410 && spellInfo_1->Id == 5116 )
                 return false;
+            
+			// Aspect of the Pack and Varie Mount Frostsaber
+            if( spellInfo_1->Id == 13159 && spellInfo_2->SpellIconID==916 && spellInfo_2->SpellVisual==1708)
+                return false;	
             break;
         case SPELLFAMILY_PALADIN:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_PALADIN )
@@ -1441,6 +1502,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             // *Seal of Command and Band of Eternal Champion (multi-family check)
             if( spellInfo_1->SpellIconID==561 && spellInfo_1->SpellVisual==7992 && spellId_2 == 35081)
+                return false;
+			
+            //	Devotion Aura and Adamantite Shell(trinket Adamantite Figurine)
+            if( spellInfo_1->Id == 33479 && spellInfo_2->SpellIconID==291 && spellInfo_2->SpellVisual==160)
                 return false;
             break;
         case SPELLFAMILY_SHAMAN:

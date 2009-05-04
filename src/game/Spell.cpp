@@ -1178,7 +1178,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             if(!(m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
                 m_spellInfo->SpellFamilyFlags & 0x800LL))
             {
-	            if(m_spellInfo->Id != 1725 && m_spellInfo->Id != 32375)
+	            if(m_spellInfo->Id != 1725 && m_spellInfo->Id != 32375 && m_spellInfo->Id !=3600)
                     unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
                 if( !(m_spellInfo->AttributesEx3 & SPELL_ATTR_EX3_NO_INITIAL_AGGRO) )
@@ -2526,7 +2526,8 @@ void Spell::finish(bool ok)
                     int32 chance = m_caster->CalculateSpellDamage(auraSpellInfo, auraSpellIdx, (*i)->GetBasePoints(),unit);
 
                     if(roll_chance_i(chance))
-                        m_caster->CastSpell(unit, auraSpellInfo->EffectTriggerSpell[auraSpellIdx], true, NULL, (*i));
+                        for ( int j=0; j != (*i)->m_stackAmount; ++j)
+                            m_caster->CastSpell(unit, auraSpellInfo->EffectTriggerSpell[auraSpellIdx], true, NULL, (*i));
                 }
             }
         }
@@ -3288,23 +3289,6 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
         }
 
-        // TODO: this check can be applied and for player to prevent cheating when IsPositiveSpell will return always correct result.
-        // check target for pet/charmed casts (not self targeted), self targeted cast used for area effects and etc
-        if(m_caster != target && m_caster->GetTypeId()==TYPEID_UNIT && m_caster->GetCharmerOrOwnerGUID())
-        {
-            // check correctness positive/negative cast target (pet cast real check and cheating check)
-            if(IsPositiveSpell(m_spellInfo->Id))
-            {
-                if(m_caster->IsHostileTo(target))
-                    return SPELL_FAILED_BAD_TARGETS;
-            }
-            else
-            {
-                if(m_caster->IsFriendlyTo(target))
-                    return SPELL_FAILED_BAD_TARGETS;
-            }
-        }
-
         if(IsPositiveSpell(m_spellInfo->Id))
             if(target->IsImmunedToSpell(m_spellInfo,false))
                 return SPELL_FAILED_TARGET_AURASTATE;
@@ -4014,22 +3998,23 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
             if(!_target->isAlive())
                 return SPELL_FAILED_BAD_TARGETS;
 
-            if(IsPositiveSpell(m_spellInfo->Id))
+            bool duelvsplayertar = false;
+            for(int j=0;j<3;j++)
             {
-                if(m_caster->IsHostileTo(_target))
-                    return SPELL_FAILED_BAD_TARGETS;
+                                                //TARGET_DUELVSPLAYER is positive AND negative
+                duelvsplayertar |= (m_spellInfo->EffectImplicitTargetA[j] == TARGET_DUELVSPLAYER);
             }
-            else
+            if (!duelvsplayertar)
             {
-                bool duelvsplayertar = false;
-                for(int j=0;j<3;j++)
+                if(IsPositiveSpell(m_spellInfo->Id))
                 {
-                                                            //TARGET_DUELVSPLAYER is positive AND negative
-                    duelvsplayertar |= (m_spellInfo->EffectImplicitTargetA[j] == TARGET_DUELVSPLAYER);
+                    if(m_caster->IsHostileTo(_target))
+                       return SPELL_FAILED_BAD_TARGETS;
                 }
-                if(m_caster->IsFriendlyTo(target) && !duelvsplayertar)
+                else
                 {
-                    return SPELL_FAILED_BAD_TARGETS;
+                    if(m_caster->IsFriendlyTo(target))
+						return SPELL_FAILED_BAD_TARGETS;					
                 }
             }
         }

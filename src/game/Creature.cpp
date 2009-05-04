@@ -347,6 +347,11 @@ void Creature::Update(uint32 diff)
                 else
                     setDeathState( JUST_ALIVED );
 
+                Map *map = MapManager::Instance().FindMap(GetMapId(), GetInstanceId());
+                if(map)
+                    if(map->IsBattleGround() && ((BattleGroundMap*)map)->GetBG())
+                        ((BattleGroundMap*)map)->GetBG()->OnCreatureRespawn(this); // for alterac valley needed to adjust the correct level again
+
                 //Call AI respawn virtual function
                 i_AI->JustRespawned();
 
@@ -552,7 +557,6 @@ bool Creature::Create (uint32 guidlow, Map *map, uint32 Entry, uint32 team, cons
         }
         LoadCreaturesAddon();
     }
-
     return bResult;
 }
 
