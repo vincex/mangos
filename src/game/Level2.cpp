@@ -30,6 +30,7 @@
 #include "World.h"
 #include "GameEventMgr.h"
 #include "SpellMgr.h"
+#include "PoolHandler.h"
 #include "AccountMgr.h"
 #include "GMTicketMgr.h"
 #include "WaypointManager.h"
@@ -1829,7 +1830,7 @@ bool ChatHandler::HandleNpcNameCommand(const char* /*args*/)
         return true;
     }
 
-    for (uint8 i = 0; i < strlen(args); i++)
+    for (uint8 i = 0; i < strlen(args); ++i)
     {
         if(!isalpha(args[i]) && args[i]!=' ')
         {
