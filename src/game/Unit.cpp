@@ -1492,7 +1492,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
 
     uint32 crTypeMask = pVictim->GetCreatureTypeMask();
     // Check spell crit chance
-    bool crit = isSpellCrit(pVictim, spellInfo, damageSchoolMask, attackType);
+    bool crit = isSpellCrit(pVictim, spellInfo, damageSchoolMask, attackType, damageInfo->crit);
     bool blocked = false;
     // Per-school calc
     switch (spellInfo->DmgClass)
@@ -9044,7 +9044,7 @@ int32 Unit::SpellBaseDamageBonusForVictim(SpellSchoolMask schoolMask, Unit *pVic
     return TakenAdvertisedBenefit;
 }
 
-bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType)
+bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType,float shatterCrit)
 {
     // not critting spell
     if((spellProto->AttributesEx2 & SPELL_ATTR_EX2_CANT_CRIT))
@@ -9078,7 +9078,8 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
                 if (pVictim->GetTypeId() == TYPEID_PLAYER)
                     crit_chance -= ((Player*)pVictim)->GetRatingBonusValue(CR_CRIT_TAKEN_SPELL);
                 // scripted (increase crit chance ... against ... target by x%
-                if(pVictim->isFrozen()) // Shatter
+				crit_chance += shatterCrit;
+				/*                if(pVictim->isFrozen()) // Shatter
                 {
                     AuraList const& mOverrideClassScript = GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
                     for(AuraList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
@@ -9092,7 +9093,7 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
                             case 913: crit_chance+= 50.0f; break; //Shatter Rank 5
                         }
                     }
-                }
+                }*/
             }
             break;
         }

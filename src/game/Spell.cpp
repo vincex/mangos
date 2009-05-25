@@ -770,7 +770,22 @@ void Spell::AddUnitTarget(Unit* pVictim, uint32 effIndex)
             return;
         }
     }
-
+	m_casterCrit = 0.0f;
+    if(pVictim->isFrozen()) // Shatter
+    {
+		Unit::AuraList const& mOverrideClassScript = m_originalCaster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+		for(Unit::AuraList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
+        {
+           switch((*i)->GetModifier()->m_miscvalue)
+           {
+              case 849: m_casterCrit+= 10.0f; break; //Shatter Rank 1
+              case 910: m_casterCrit+= 20.0f; break; //Shatter Rank 2
+              case 911: m_casterCrit+= 30.0f; break; //Shatter Rank 3
+              case 912: m_casterCrit+= 40.0f; break; //Shatter Rank 4
+              case 913: m_casterCrit+= 50.0f; break; //Shatter Rank 5
+           }
+       }
+    }
     // This is new target calculate data for him
 
     // Get spell hit result on target
@@ -1053,7 +1068,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
     {
         // Fill base damage struct (unitTarget - is real spell target)
         SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->Id, m_spellSchoolMask);
-
+        damageInfo.crit = m_casterCrit;
         // Add bonuses and fill damageInfo struct
         caster->CalculateSpellDamage(&damageInfo, m_damage, m_spellInfo);
 
