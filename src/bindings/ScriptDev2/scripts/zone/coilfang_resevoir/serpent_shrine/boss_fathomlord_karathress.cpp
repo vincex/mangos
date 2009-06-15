@@ -61,6 +61,7 @@ enum
 
     //Caribdis Spells
     SPELL_WATER_BOLT_VOLLEY         = 38335,
+	SPELL_TIDAL_SURGE_DMG           = 38358,
     SPELL_TIDAL_SURGE               = 38353,
     SPELL_HEAL                      = 38330,
 
@@ -508,6 +509,7 @@ struct MANGOS_DLL_DECL boss_fathomguard_caribdisAI : public ScriptedAI
         //m_uiTidalSurge_Timer
         if (m_uiTidalSurge_Timer < uiDiff)
         {
+			DoCast(m_creature->getVictim(), SPELL_TIDAL_SURGE_DMG);
             DoCast(m_creature->getVictim(), SPELL_TIDAL_SURGE);
             m_uiTidalSurge_Timer = 15000+rand()%5000;
         }else m_uiTidalSurge_Timer -= uiDiff;
