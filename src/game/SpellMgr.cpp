@@ -40,14 +40,20 @@ SpellMgr& SpellMgr::Instance()
     return spellMgr;
 }
 
-int32 GetSpellDuration(SpellEntry const *spellInfo)
+int32 GetSpellDuration(SpellEntry const *spellInfo, Spell const* spell)
 {
     if(!spellInfo)
         return 0;
     SpellDurationEntry const *du = sSpellDurationStore.LookupEntry(spellInfo->DurationIndex);
     if(!du)
         return 0;
-    return (du->Duration[0] == -1) ? -1 : abs(du->Duration[0]);
+	int32 duration = (du->Duration[0] == -1) ? -1 : abs(du->Duration[0]);
+	if(spell){
+		//if( !(spellInfo->Attributes & (SPELL_ATTR_UNK4|SPELL_ATTR_UNK5)) )
+		duration = int32(duration * spell->GetCaster()->GetFloatValue(UNIT_MOD_CAST_SPEED));
+	}
+    return duration;
+
 }
 
 int32 GetSpellMaxDuration(SpellEntry const *spellInfo)
@@ -325,6 +331,10 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
         case SPELL_EFFECT_ENERGIZE_PCT:
             return true;
 
+        // Charge casted on self to run - so must be positive
+        case SPELL_EFFECT_CHARGE:
+            return true;
+
             // non-positive aura use
         case SPELL_EFFECT_APPLY_AURA:
         case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:
@@ -550,6 +560,17 @@ bool IsSingleTargetSpells(SpellEntry const *spellInfo1, SpellEntry const *spellI
             break;
     }
 
+    return false;
+}
+
+bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
+{
+    SpellEntry const *spellproto = sSpellStore.LookupEntry(spellId);
+    if (!spellproto) return false;
+
+    for (int i = 0; i < 3; i++)
+        if (spellproto->EffectApplyAuraName[i] == auraType)
+            return true;
     return false;
 }
 
@@ -829,8 +850,8 @@ void SpellMgr::LoadSpellProcEvents()
 
     uint32 count = 0;
 
-    //                                                0      1           2         3        4                5                6          7        8
-    QueryResult *result = WorldDatabase.Query("SELECT entry, SchoolMask, Category, SkillID, SpellFamilyName, SpellFamilyMask, procFlags, ppmRate, cooldown FROM spell_proc_event");
+    //                                                0      1           2                3                4          5       6        7             8
+    QueryResult *result = WorldDatabase.Query("SELECT entry, SchoolMask, SpellFamilyName, SpellFamilyMask, procFlags, procEx, ppmRate, CustomChance, Cooldown FROM spell_proc_event");
     if( !result )
     {
 
@@ -844,7 +865,7 @@ void SpellMgr::LoadSpellProcEvents()
     }
 
     barGoLink bar( result->GetRowCount() );
-
+    uint32 customProc = 0;
     do
     {
         Field *fields = result->Fetch();
@@ -853,7 +874,8 @@ void SpellMgr::LoadSpellProcEvents()
 
         uint16 entry = fields[0].GetUInt16();
 
-        if (!sSpellStore.LookupEntry(entry))
+        const SpellEntry *spell = sSpellStore.LookupEntry(entry);
+        if (!spell)
         {
             sLog.outErrorDb("Spell %u listed in `spell_proc_event` does not exist", entry);
             continue;
@@ -862,23 +884,35 @@ void SpellMgr::LoadSpellProcEvents()
         SpellProcEventEntry spe;
 
         spe.schoolMask      = fields[1].GetUInt32();
-        spe.category        = fields[2].GetUInt32();
-        spe.skillId         = fields[3].GetUInt32();
-        spe.spellFamilyName = fields[4].GetUInt32();
-        spe.spellFamilyMask = fields[5].GetUInt64();
-        spe.procFlags       = fields[6].GetUInt32();
-        spe.ppmRate         = fields[7].GetFloat();
+        spe.spellFamilyName = fields[2].GetUInt32();
+        spe.spellFamilyMask = fields[3].GetUInt64();
+        spe.procFlags       = fields[4].GetUInt32();
+        spe.procEx          = fields[5].GetUInt32();
+        spe.ppmRate         = fields[6].GetFloat();
+        spe.customChance    = fields[7].GetFloat();
         spe.cooldown        = fields[8].GetUInt32();
 
         mSpellProcEventMap[entry] = spe;
 
+        if (spell->procFlags==0)
+        {
+            if (spe.procFlags == 0)
+            {
+                sLog.outErrorDb("Spell %u listed in `spell_proc_event` probally not triggered spell", entry);
+                continue;
+            }
+            customProc++;
+        }
         ++count;
     } while( result->NextRow() );
 
     delete result;
 
     sLog.outString();
-    sLog.outString( ">> Loaded %u spell proc event conditions", count  );
+    if (customProc)
+        sLog.outString( ">> Loaded %u custom spell proc event conditions +%u custom",  count, customProc );
+    else
+        sLog.outString( ">> Loaded %u spell proc event conditions", count );
 
     /*
     // Commented for now, as it still produces many errors (still quite many spells miss spell_proc_event)
@@ -910,6 +944,7 @@ void SpellMgr::LoadSpellProcEvents()
     */
 }
 
+/*
 bool SpellMgr::IsSpellProcEventCanTriggeredBy( SpellProcEventEntry const * spellProcEvent, SpellEntry const * procSpell, uint32 procFlags )
 {
     if((procFlags & spellProcEvent->procFlags) == 0)
@@ -947,6 +982,73 @@ bool SpellMgr::IsSpellProcEventCanTriggeredBy( SpellProcEventEntry const * spell
         return false;
 
     return true;
+}
+*/
+
+bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const * spellProcEvent, uint32 EventProcFlag, SpellEntry const * procSpell, uint32 procFlags, uint32 procExtra, bool active)
+{
+    // No extra req need
+    uint32 procEvent_procEx = PROC_EX_NONE;
+
+    // check prockFlags for condition
+    if((procFlags & EventProcFlag) == 0)
+        return false;
+
+    // Always trigger for this
+    if (EventProcFlag & (PROC_FLAG_KILLED | PROC_FLAG_KILL_AND_GET_XP))
+        return true;
+
+    if (spellProcEvent)     // Exist event data
+    {
+        // Store extra req
+        procEvent_procEx = spellProcEvent->procEx;
+
+        // For melee triggers
+        if (procSpell == NULL)
+        {
+            // Check (if set) for school (melee attack have Normal school)
+            if(spellProcEvent->schoolMask && (spellProcEvent->schoolMask & SPELL_SCHOOL_MASK_NORMAL) == 0)
+                return false;
+        }
+        else // For spells need check school/spell family/family mask
+        {
+            // Check (if set) for school
+            if(spellProcEvent->schoolMask && (spellProcEvent->schoolMask & procSpell->SchoolMask) == 0)
+                return false;
+
+            // Check (if set) for spellFamilyName
+            if(spellProcEvent->spellFamilyName && (spellProcEvent->spellFamilyName != procSpell->SpellFamilyName))
+                return false;
+
+            // spellFamilyName is Ok need check for spellFamilyMask if present
+            if(spellProcEvent->spellFamilyMask)
+            {
+                if ((spellProcEvent->spellFamilyMask & procSpell->SpellFamilyFlags) == 0)
+                    return false;
+                active = true; // Spell added manualy -> so its active spell
+            }
+        }
+    }
+    // Check for extra req (if none) and hit/crit
+    if (procEvent_procEx == PROC_EX_NONE)
+    {
+        // No extra req, so can trigger only for active (damage/healing present) and hit/crit
+        if((procExtra & (PROC_EX_NORMAL_HIT|PROC_EX_CRITICAL_HIT)) && active)
+            return true;
+    }
+    else // Passive spells hits here only if resist/reflect/immune/evade
+    {
+        // Exist req for PROC_EX_EX_TRIGGER_ALWAYS
+        if (procEvent_procEx & PROC_EX_EX_TRIGGER_ALWAYS)
+            return true;
+        // Passive spells can`t trigger if need hit
+        if ((procEvent_procEx & PROC_EX_NORMAL_HIT) && !active)
+            return false;
+        // Check Extra Requirement like (hit/crit/miss/resist/parry/dodge/block/immune/reflect/absorb and other)
+        if (procEvent_procEx & procExtra)
+            return true;
+    }
+    return false;
 }
 
 void SpellMgr::LoadSpellElixirs()
@@ -1104,7 +1206,20 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     if( (spellInfo_1->Id == 23170 && spellInfo_2->Id == 23171) ||
                         (spellInfo_2->Id == 23170 && spellInfo_1->Id == 23171) )
                         return false;
-
+						
+                    // Death Wish and Lust for Battle (trinket Bloodlust Brooch)
+                     if( spellInfo_2->Id == 35166 && spellInfo_1->Id == 12292 ||
+                         spellInfo_1->Id == 35166 && spellInfo_2->Id == 12292 )
+                        return false;
+					
+                    // Shadow Ward and Orb Of Deception
+                    if( spellInfo_1->SpellIconID==207 && spellInfo_2->SpellIconID==207)
+                        return false;
+					   
+                    // Blood Fury(orc racial) and Rage of the Unraveller (trinket Hourglass of the Unraveller)
+                    if( spellInfo_1->Id == 20572 || spellInfo_1->Id == 33697 && spellInfo_2->Id == 33649 ||
+                        spellInfo_2->Id == 20572 || spellInfo_2->Id == 33697 && spellInfo_1->Id == 33649)
+                        return false;
                     break;
                 }
                 case SPELLFAMILY_WARRIOR:
@@ -1162,6 +1277,24 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     break;
                 }
+                case SPELLFAMILY_PRIEST:
+                {
+                    //Shadow Ward or Orb Of Deception and Shadow Protection
+                    if( spellInfo_2->SpellIconID==207 && spellInfo_2->SpellVisual==27 && spellInfo_1->SpellIconID==207)
+                        return false;
+                    // Renewal (Priest Set T4 bonus 1) and Renew
+                    if( spellInfo_1->Id == 37563 && spellInfo_2->SpellIconID==321 && spellInfo_2->SpellVisual==280)
+                        return false;	
+
+                    break;
+                }
+                case SPELLFAMILY_WARLOCK:
+                {
+                    //Tainted Blood and Health Funnel
+                    if( spellInfo_2->SpellIconID==153 && spellInfo_2->SpellVisual==163 && spellInfo_1->SpellIconID==153)
+                       return false;
+                    break;
+                }
             }
             // Dragonmaw Illusion, Blood Elf Illusion, Human Illusion, Illidari Agent Illusion, Scarlet Crusade Disguise
             if(spellInfo_1->SpellIconID == 1691 && spellInfo_2->SpellIconID == 1691)
@@ -1187,7 +1320,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Combustion and Fire Protection Aura (multi-family check)
             if( spellInfo_1->Id == 11129 && spellInfo_2->SpellIconID == 33 && spellInfo_2->SpellVisual == 321 )
                 return false;
-
+				
+            // Arcane Power and Innervate
+            if( spellInfo_1->Id == 12042 && spellInfo_2->Id == 29166)
+                return false;
             break;
         case SPELLFAMILY_WARLOCK:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_WARLOCK )
@@ -1257,6 +1393,19 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     (spellInfo_2->SpellFamilyFlags & UI64LIT(0x200000)) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x8000)))
                     return false;
             }
+            
+            // Abolish Disease and Mind-Numbing Poison
+            if( spellInfo_1->Id == 552  && spellInfo_2->SpellIconID == 264 && spellInfo_2->SpellVisual == 5100)				
+                return false;	
+		
+            //Shadow Ward or Orb Of Deception and Shadow Protection
+            if( spellInfo_1->SpellIconID==207 && spellInfo_1->SpellVisual==27 && spellInfo_2->SpellIconID==207)
+                return false;	
+
+            // Renewal (Priest Set T4 bonus 1) and Renew
+            if( spellInfo_2->Id == 37563 && spellInfo_1->SpellIconID==321 && spellInfo_1->SpellVisual==280)
+                return false;
+
             break;
         case SPELLFAMILY_DRUID:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_DRUID )
@@ -1265,7 +1414,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 if( (spellInfo_1->SpellFamilyFlags == UI64LIT(0x0) && spellInfo_1->SpellIconID == 108) && (spellInfo_2->SpellFamilyFlags & UI64LIT(0x20000000000000)) ||
                     (spellInfo_2->SpellFamilyFlags == UI64LIT(0x0) && spellInfo_2->SpellIconID == 108) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x20000000000000)) )
                     return false;
-
+				
+				//lacerate dot && moonfire dot
+				if( (spellInfo_1->SpellVisual == 1263 && spellInfo_1->SpellIconID == 225) && (spellId_2 == 33745) ||
+				    (spellInfo_2->SpellVisual == 1263 && spellInfo_2->SpellIconID == 225) && (spellId_1 == 33745)
+					return false;
                 //  Tree of Life (Shapeshift) and 34123 Tree of Life (Passive)
                 if ((spellId_1 == 33891 && spellId_2 == 34123) ||
                     (spellId_2 == 33891 && spellId_1 == 34123))
@@ -1292,6 +1445,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             if (spellId_1 == 42016 && spellId_2 == 40216 )
                 return false;
 
+            // Arcane Power and Innervate
+            if( spellInfo_2->Id == 12042 && spellInfo_1->Id == 29166)
+                return false;	
+
             break;
         case SPELLFAMILY_ROGUE:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_ROGUE )
@@ -1304,7 +1461,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Garrote -> Garrote-Silence (multi-family check)
             if( spellInfo_1->SpellIconID == 498 && spellInfo_2->SpellIconID == 498 && spellInfo_2->SpellVisual == 0 )
                 return false;
-            break;
+
+            // Mind-Numbing Poison and Abolish Disease
+            if( spellInfo_2->Id == 552  && spellInfo_1->SpellIconID == 264 && spellInfo_1->SpellVisual == 5100)				
+                return false;
+            break;			
         case SPELLFAMILY_HUNTER:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_HUNTER )
             {
@@ -1330,6 +1491,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Concussive Shot and Imp. Concussive Shot (multi-family check)
             if( spellInfo_2->Id == 19410 && spellInfo_1->Id == 5116 )
                 return false;
+            
+			// Aspect of the Pack and Varie Mount Frostsaber
+            if( spellInfo_1->Id == 13159 && spellInfo_2->SpellIconID==916 && spellInfo_2->SpellVisual==1708)
+                return false;	
             break;
         case SPELLFAMILY_PALADIN:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_PALADIN )
@@ -1348,6 +1513,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             // *Seal of Command and Band of Eternal Champion (multi-family check)
             if( spellInfo_1->SpellIconID==561 && spellInfo_1->SpellVisual==7992 && spellId_2 == 35081)
+                return false;
+			
+            //	Devotion Aura and Adamantite Shell(trinket Adamantite Figurine)
+            if( spellInfo_1->Id == 33479 && spellInfo_2->SpellIconID==291 && spellInfo_2->SpellVisual==160)
                 return false;
             break;
         case SPELLFAMILY_SHAMAN:
@@ -2257,7 +2426,7 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
                 return DIMINISHING_DEATHCOIL;
             // Fear
             if (spellproto->SpellFamilyFlags & UI64LIT(0x40840000000))
-                return DIMINISHING_WARLOCK_FEAR;
+                return DIMINISHING_FEAR;
             // Curses/etc
             if (spellproto->SpellFamilyFlags & UI64LIT(0x00080000000))
                 return DIMINISHING_LIMITONLY;

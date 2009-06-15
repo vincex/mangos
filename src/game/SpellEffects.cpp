@@ -349,6 +349,8 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                 {
                     m_caster->CastSpell(m_caster, 36032, true);
                 }
+				if (m_spellInfo->Id == 29956)
+					damage *= 4;case 30458:
                 break;
             }
             case SPELLFAMILY_WARRIOR:
@@ -544,61 +546,7 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
         }
 
         if(damage >= 0)
-        {
-            uint32 finalDamage;
-            if(m_originalCaster)                            // m_caster only passive source of cast
-                finalDamage = m_originalCaster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, damage, m_IsTriggeredSpell, true);
-            else
-                finalDamage = m_caster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, damage, m_IsTriggeredSpell, true);
-
-            // post effects
-            switch(m_spellInfo->SpellFamilyName)
-            {
-                case SPELLFAMILY_WARRIOR:
-                {
-                    // Bloodthirst
-                    if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x40000000000))
-                    {
-                        uint32 BTAura = 0;
-                        switch(m_spellInfo->Id)
-                        {
-                            case 23881: BTAura = 23885; break;
-                            case 23892: BTAura = 23886; break;
-                            case 23893: BTAura = 23887; break;
-                            case 23894: BTAura = 23888; break;
-                            case 25251: BTAura = 25252; break;
-                            case 30335: BTAura = 30339; break;
-                            default:
-                                sLog.outError("Spell::EffectSchoolDMG: Spell %u not handled in BTAura",m_spellInfo->Id);
-                                break;
-                        }
-
-                        if (BTAura)
-                            m_caster->CastSpell(m_caster,BTAura,true);
-                    }
-                    break;
-                }
-                case SPELLFAMILY_PRIEST:
-                {
-                    // Shadow Word: Death
-                    if(finalDamage > 0 && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000200000000)) && unitTarget->isAlive())
-                        // deals damage equal to damage done to caster if victim is not killed
-                        m_caster->SpellNonMeleeDamageLog( m_caster, m_spellInfo->Id, finalDamage, m_IsTriggeredSpell, false);
-
-                    break;
-                }
-                case SPELLFAMILY_PALADIN:
-                {
-                    // Judgement of Blood
-                    if(finalDamage > 0 && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000800000000)) && m_spellInfo->SpellIconID==153)
-                    {
-                        int32 damagePoint  = finalDamage * 33 / 100;
-                        m_caster->CastCustomSpell(m_caster, 32220, &damagePoint, NULL, NULL, true);
-                    }
-                    break;
-                }
-            }
-        }
+            m_damage+= damage;
     }
 }
 
@@ -935,7 +883,7 @@ void Spell::EffectDummy(uint32 i)
                     return;
                 }
                 case 29858:                                 // Soulshatter
-                    if (unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT && unitTarget->IsHostileTo(m_caster))
+                   if (unitTarget && unitTarget->CanHaveThreatList()&& unitTarget->getThreatManager().getThreat(m_caster) > 0.0f)
                         m_caster->CastSpell(unitTarget,32835,true);
                     return;
                 case 30458:                                 // Nigh Invulnerability
@@ -1396,7 +1344,7 @@ void Spell::EffectDummy(uint32 i)
                 }
 
                 if(found)
-                    m_caster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, damage, m_IsTriggeredSpell, true);
+                    m_damage+= damage;
                 return;
             }
             // Kill command
@@ -1503,8 +1451,24 @@ void Spell::EffectDummy(uint32 i)
                         // decreased damage (/2) for non-stunned target.
                         SpellModifier *mod = new SpellModifier;
                         mod->op = SPELLMOD_DAMAGE;
-                        mod->value = -50;
-                        mod->type = SPELLMOD_PCT;
+						switch(spell_id)
+						{
+							case 20467: mod ->value = -48;
+								break;
+							case 20963: mod ->value = -76;
+								break;
+							case 20964: mod ->value = -107;
+								break;
+							case 20965: mod ->value = -137;
+								break;
+							case 20966: mod ->value = -178;
+								break;
+							case 27171: mod ->value = -240;
+								break;
+							default: break;
+						}
+						
+                        mod->type = SPELLMOD_FLAT;
                         mod->spellId = m_spellInfo->Id;
                         mod->effectId = i;
                         mod->lastAffected = NULL;
@@ -1948,7 +1912,7 @@ void Spell::EffectTeleportUnits(uint32 i)
             else
                 pTarget = m_caster->getVictim();
             // No target present - return
-            if (!pTarget)
+            if ((!pTarget) || (pTarget->IsFriendlyTo(m_caster)))
                 return;
             // Init dest coordinates
             uint32 mapid = m_caster->GetMapId();
@@ -2331,7 +2295,7 @@ void Spell::EffectPowerBurn(uint32 i)
         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_MULTIPLE_VALUE, multiplier);
 
     new_damage = int32(new_damage * multiplier);
-    m_caster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, new_damage, m_IsTriggeredSpell, true);
+    m_damage+=new_damage;
 }
 
 void Spell::EffectHeal( uint32 /*i*/ )
@@ -2399,22 +2363,7 @@ void Spell::EffectHeal( uint32 /*i*/ )
         else
             addhealth = caster->SpellHealingBonus(m_spellInfo, addhealth,HEAL, unitTarget);
 
-        bool crit = caster->isSpellCrit(unitTarget, m_spellInfo, m_spellSchoolMask, m_attackType);
-        if (crit)
-            addhealth = caster->SpellCriticalBonus(m_spellInfo, addhealth, unitTarget);
-
-        int32 gain = caster->DealHeal(unitTarget, addhealth, m_spellInfo, crit);
-        unitTarget->getHostilRefManager().threatAssist(m_caster, float(gain) * 0.5f, m_spellInfo);
-
-        // ignore item heals
-        if(m_CastItem)
-            return;
-
-        uint32 procHealer = PROC_FLAG_HEAL;
-        if (crit)
-            procHealer |= PROC_FLAG_CRIT_HEAL;
-
-        m_caster->ProcDamageAndSpell(unitTarget,procHealer,PROC_FLAG_HEALED,addhealth,SPELL_SCHOOL_MASK_NONE,m_spellInfo,m_IsTriggeredSpell);
+        m_healing+=addhealth;
     }
 }
 
@@ -2480,6 +2429,8 @@ void Spell::EffectHealthLeech(uint32 i)
         new_damage = m_caster->SpellHealingBonus(m_spellInfo, new_damage, HEAL, m_caster);
         m_caster->DealHeal(m_caster, uint32(new_damage), m_spellInfo);
     }
+//    m_healthLeech+=tmpvalue;
+//    m_damage+=new_damage;
 }
 
 void Spell::DoCreateItem(uint32 i, uint32 itemtype)
@@ -4100,7 +4051,7 @@ void Spell::EffectTaunt(uint32 /*i*/)
 
     // Also use this effect to set the taunter's threat to the taunted creature's highest value
     if (unitTarget->CanHaveThreatList() && unitTarget->getThreatManager().getCurrentVictim())
-        unitTarget->getThreatManager().addThreat(m_caster,unitTarget->getThreatManager().getCurrentVictim()->getThreat());
+        unitTarget->getThreatManager().addThreat(m_caster,unitTarget->getThreatManager().getCurrentVictim()->getThreat() - unitTarget->getThreatManager().getThreat(m_caster) );
 }
 
 void Spell::EffectWeaponDmg(uint32 i)
@@ -4285,35 +4236,9 @@ void Spell::EffectWeaponDmg(uint32 i)
     // prevent negative damage
     uint32 eff_damage = uint32(bonus > 0 ? bonus : 0);
 
-    const uint32 nohitMask = HITINFO_ABSORB | HITINFO_RESIST | HITINFO_MISS;
-
-    uint32 hitInfo = 0;
-    VictimState victimState = VICTIMSTATE_NORMAL;
-    uint32 blocked_dmg = 0;
-    uint32 absorbed_dmg = 0;
-    uint32 resisted_dmg = 0;
-    CleanDamage cleanDamage =  CleanDamage(0, BASE_ATTACK, MELEE_HIT_NORMAL );
-
-    m_caster->DoAttackDamage(unitTarget, &eff_damage, &cleanDamage, &blocked_dmg, m_spellSchoolMask, &hitInfo, &victimState, &absorbed_dmg, &resisted_dmg, m_attackType, m_spellInfo, m_IsTriggeredSpell);
-
-    if ((hitInfo & nohitMask) && m_attackType != RANGED_ATTACK)  // not send ranged miss/etc
-        m_caster->SendAttackStateUpdate(hitInfo & nohitMask, unitTarget, 1, m_spellSchoolMask, eff_damage, absorbed_dmg, resisted_dmg, VICTIMSTATE_NORMAL, blocked_dmg);
-
-    bool criticalhit = (hitInfo & HITINFO_CRITICALHIT);
-    m_caster->SendSpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, eff_damage, m_spellSchoolMask, absorbed_dmg, resisted_dmg, false, blocked_dmg, criticalhit);
-
-    if (eff_damage > (absorbed_dmg + resisted_dmg + blocked_dmg))
-    {
-        eff_damage -= (absorbed_dmg + resisted_dmg + blocked_dmg);
-    }
-    else
-    {
-        cleanDamage.damage += eff_damage;
-        eff_damage = 0;
-    }
-
-    // SPELL_SCHOOL_NORMAL use for weapon-like threat and rage calculation
-    m_caster->DealDamage(unitTarget, eff_damage, &cleanDamage, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, true);
+    // Add melee damage bonuses (also check for negative)
+    m_caster->MeleeDamageBonus(unitTarget, &eff_damage, m_attackType, m_spellInfo);
+    m_damage+= eff_damage;
 
     // Hemorrhage
     if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
@@ -4379,6 +4304,8 @@ void Spell::EffectHealMaxHealth(uint32 /*i*/)
 
     int32 gain = m_caster->DealHeal(unitTarget, heal, m_spellInfo);
     unitTarget->getHostilRefManager().threatAssist(m_caster, float(gain) * 0.5f, m_spellInfo);
+	
+	 m_healing+=heal;
 }
 
 void Spell::EffectInterruptCast(uint32 /*i*/)
@@ -5039,6 +4966,53 @@ void Spell::EffectSummonPlayer(uint32 /*i*/)
     if(unitTarget->GetDummyAura(23445))
         return;
 
+//Summon in instance without prereq
+	Player* player = (Player*)unitTarget;
+	if (m_caster->GetMap()->IsDungeon()){
+		QueryResult *result = WorldDatabase.PQuery("SELECT id FROM areatrigger_teleport WHERE target_map = %u",m_caster->GetMapId());
+		if (result){
+			do
+			{
+				Field *fields = result->Fetch();
+				uint32 TRIGGER_ID = fields[0].GetUInt32();
+				AreaTrigger const* at = objmgr.GetAreaTrigger(TRIGGER_ID);
+				if (at){
+					if(!player->isGameMaster()){
+						//Level
+						if(player->getLevel() < at->requiredLevel && !sWorld.getConfig(CONFIG_INSTANCE_IGNORE_LEVEL))
+							return;
+						//Item
+						if(at->requiredItem)
+						{
+							if(!player->HasItemCount(at->requiredItem, 1) &&
+							(!at->requiredItem2 || !player->HasItemCount(at->requiredItem2, 1)))
+								return;
+						}else if(at->requiredItem2 && !player->HasItemCount(at->requiredItem2, 1))
+							return;
+						//Key
+						if(player->GetDifficulty() == DIFFICULTY_HEROIC)
+						{
+							if(at->heroicKey)
+							{
+								if(!player->HasItemCount(at->heroicKey, 1) &&
+								(!at->heroicKey2 || !player->HasItemCount(at->heroicKey2, 1)))
+									return;
+							}
+							else if(at->heroicKey2 && !player->HasItemCount(at->heroicKey2, 1))
+								return;
+						}
+						//Quest
+						if(at->requiredQuest && !player->GetQuestRewardStatus(at->requiredQuest))
+							return;
+
+
+					}
+				}
+			}while(result->NextRow());
+		}
+		delete result;
+	}
+
     float x, y, z;
     m_caster->GetClosePoint(x, y, z, unitTarget->GetObjectSize());
 
@@ -5421,20 +5395,51 @@ void Spell::EffectMomentMove(uint32 i)
         uint32 mapid = m_caster->GetMapId();
         float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
 
-        // before caster
-        float fx, fy, fz;
-        unitTarget->GetClosePoint(fx, fy, fz, unitTarget->GetObjectSize(), dis);
-        float ox, oy, oz;
-        unitTarget->GetPosition(ox, oy, oz);
-
-        float fx2, fy2, fz2;                                  // getObjectHitPos overwrite last args in any result case
-        if(VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(mapid, ox,oy,oz+0.5, fx,fy,oz+0.5,fx2,fy2,fz2, -0.5))
-        {
-            fx = fx2;
-            fy = fy2;
-            fz = fz2;
-            unitTarget->UpdateGroundPositionZ(fx, fy, fz);
-        }
+            /*TANKK - fix BLINK MAGE*/
+            float fx,fy,fz;
+            float dx,dy,dz;
+            float angle = unitTarget->GetOrientation();
+            unitTarget->GetPosition(fx,fy,fz);
+            
+            //Check use of vamps//
+            bool useVmap = false;
+            bool swapZone = true;
+            if( MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(fx, fy, fz, false) <  MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(fx, fy, fz, true) )
+                useVmap = true;
+            
+            //Going foward 0.5f until max distance
+            for(float i=0.5f; i<dis; i+=0.5f)
+            {
+                unitTarget->GetNearPoint2D(dx,dy,i,angle);
+                dz = MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(dx, dy, fz, useVmap);
+                
+                //Prevent climbing and go around object maybe 2.0f is to small? use 3.0f?
+                if( (dz-fz) < 2.0f && (dz-fz) > -2.0f && (unitTarget->IsWithinLOS(dx, dy, dz)))
+                {
+                    //No climb, the z differenze between this and prev step is ok. Store this destination for future use or check.
+                    fx = dx;
+                    fy = dy;
+                    fz = dz;
+                }
+                else
+                {
+                    //Something wrong with los or z differenze... maybe we are going from outer world inside a building or viceversa
+                    if(swapZone)
+                    {
+                        //so... change use of vamp and go back 1 step backward and recheck again.
+                        swapZone = false;
+                        useVmap = !useVmap;
+                        i-=0.5f;
+                    }
+                    else
+                    {
+                        //bad recheck result... so break this and use last good coord for teleport player...
+                        dz += 0.5f;
+                        break;
+                    }
+                }
+            }
+            fz+=1.0f;
 
         if(unitTarget->GetTypeId() == TYPEID_PLAYER)
             ((Player*)unitTarget)->TeleportTo(mapid, fx, fy, fz, unitTarget->GetOrientation(), TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET | (unitTarget==m_caster ? TELE_TO_SPELL : 0));
@@ -5540,10 +5545,14 @@ void Spell::EffectCharge(uint32 /*i*/)
     if(!unitTarget || !m_caster)
         return;
 
+    Unit *chargeTarget = m_targets.getUnitTarget();
+    if (!chargeTarget)
+        return;
+
     float x, y, z;
-    unitTarget->GetContactPoint(m_caster, x, y, z);
-    if(unitTarget->GetTypeId() != TYPEID_PLAYER)
-        ((Creature *)unitTarget)->StopMoving();
+    chargeTarget->GetContactPoint(m_caster, x, y, z);
+    if(chargeTarget->GetTypeId() != TYPEID_PLAYER)
+        ((Creature *)chargeTarget)->StopMoving();
 
     // Only send MOVEMENTFLAG_WALK_MODE, client has strange issues with other move flags
     m_caster->SendMonsterMove(x, y, z, 0, MOVEMENTFLAG_WALK_MODE, 1);
@@ -5553,7 +5562,7 @@ void Spell::EffectCharge(uint32 /*i*/)
 
     // not all charge effects used in negative spells
     if ( !IsPositiveSpell(m_spellInfo->Id))
-        m_caster->Attack(unitTarget,true);
+        m_caster->Attack(chargeTarget,true);
 }
 
 void Spell::EffectSummonCritter(uint32 i)

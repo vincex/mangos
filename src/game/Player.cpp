@@ -1486,6 +1486,22 @@ bool Player::ToggleDND()
     return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_DND);
 }
 
+bool Player::IsCastingSpell() const
+{
+    // currently casted spells can be dependent from item
+    for (uint32 i = 0; i < CURRENT_MAX_SPELL; i++)
+    {
+        if(m_currentSpells[i] && m_currentSpells[i]->getState()==SPELL_STATE_PREPARING)
+    {
+    m_currentSpells[i]->cancel();
+        return true;
+    }
+    else if (m_currentSpells[i] && m_currentSpells[i]->getState()!=SPELL_STATE_PREPARING)
+	    return false;
+    }
+  return 0;
+}
+
 uint8 Player::chatTag() const
 {
     // it's bitmask
@@ -4875,6 +4891,7 @@ void Player::UpdateWeaponSkill (WeaponAttackType attType)
 
 void Player::UpdateCombatSkills(Unit *pVictim, WeaponAttackType attType, MeleeHitOutcome outcome, bool defence)
 {
+/* Not need, this checked on call this func from trigger system
     switch(outcome)
     {
         case MELEE_HIT_CRIT:
@@ -4887,7 +4904,7 @@ void Player::UpdateCombatSkills(Unit *pVictim, WeaponAttackType attType, MeleeHi
         default:
             break;
     }
-
+*/
     uint32 plevel = getLevel();                             // if defense than pVictim == attacker
     uint32 greylevel = MaNGOS::XP::GetGrayLevel(plevel);
     uint32 moblevel = pVictim->getLevelForTarget(this);
@@ -5941,7 +5958,7 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
             pvpInfo.endTimer = time(0);                     // start toggle-off
     }
 
-    if(zone->flags & AREA_FLAG_SANCTUARY)                   // in sanctuary
+    if(zone->flags & AREA_FLAG_SANCTUARY || (this->GetAreaId() == 2317 )) /*TANKK fix Sanctuary isola premium*/
     {
         SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_SANCTUARY);
         if(sWorld.IsFFAPvPRealm())
