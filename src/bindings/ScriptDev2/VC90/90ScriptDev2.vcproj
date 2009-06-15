@@ -1813,6 +1813,10 @@
 							>
 						</File>
 						<File
+						RelativePath="..\scripts\zone\tempest_keep\the_eye\boss_alar.cpp"
+							>
+						</File>
+						<File
 							RelativePath="..\scripts\zone\tempest_keep\the_eye\boss_kaelthas.cpp"
 							>
 						</File>
