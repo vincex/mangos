@@ -384,7 +384,7 @@ void BattleGround::YellToAll(Creature* creature, const char* text, uint32 langua
         Player *plr = objmgr.GetPlayer(itr->first);
         if(!plr)
         {
-            sLog.outError("BattleGround: Player " I64FMTD " not found!", itr->first);
+            sLog.outError("BattleGround: Player " UI64FMTD " not found!", itr->first);
             continue;
         }
         creature->BuildMonsterChat(&data,CHAT_MSG_MONSTER_YELL,text,language,creature->GetName(),itr->first);
