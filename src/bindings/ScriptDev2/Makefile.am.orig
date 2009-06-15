@@ -56,6 +56,14 @@ scripts/go/go_scripts.cpp \
 scripts/guard/guard_ai.cpp \
 scripts/guard/guard_ai.h \
 scripts/guard/guards.cpp \
+scripts/guardian/guardian_BattleChicken.cpp \
+scripts/guardian/guardian_CrimsonCannon.cpp \
+scripts/guardian/guardian_EmeraldDragonWhelp.cpp \
+scripts/guardian/guardian_ExplosiveSheep.cpp \
+scripts/guardian/guardian_OnlyMelee.cpp \
+scripts/guardian/guardian_SnakeTrap.cpp \
+scripts/guardian/guardian_Shahram.cpp \
+scripts/guardian/guardian_TimbermawAncestor.cpp \
 scripts/item/item_scripts.cpp \
 scripts/npc/npc_escortAI.cpp \
 scripts/npc/npc_escortAI.h \
@@ -63,6 +71,10 @@ scripts/npc/npc_innkeeper.cpp \
 scripts/npc/npc_professions.cpp \
 scripts/npc/npcs_special.cpp \
 scripts/zone/alterac_mountains/alterac_mountains.cpp \
+scripts/zone/alterac_valley/boss_balinda.cpp \
+scripts/zone/alterac_valley/boss_drekthar.cpp \
+scripts/zone/alterac_valley/boss_galvangar.cpp \
+scripts/zone/alterac_valley/boss_vanndar.cpp \
 scripts/zone/arathi_highlands/arathi_highlands.cpp \
 scripts/zone/ashenvale_forest/ashenvale.cpp \
 scripts/zone/aunchindoun/auchenai_crypts/boss_exarch_maladaar.cpp \

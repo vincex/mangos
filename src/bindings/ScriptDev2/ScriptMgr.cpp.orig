@@ -64,6 +64,17 @@ extern void AddSC_go_scripts();
 // -- Guard --
 extern void AddSC_guards();
 
+// -- Guardian --
+extern void AddSC_guardian_melee();
+
+extern void AddSC_SnakeTrap();
+extern void AddSC_CrimsonCannon();
+extern void AddSC_TimbermawAncestor();
+extern void AddSC_Shahram();
+extern void AddSC_EmeraldDragonWhelp();
+extern void AddSC_BattleChicken();
+extern void AddSC_ExplosiveSheep();
+
 // -- Honor --
 
 // -- Item --
@@ -951,7 +962,18 @@ void ScriptsInit()
     // -- Guard --
     AddSC_guards();
 
-    // -- Honor --
+	// -- Guardian --
+	AddSC_guardian_melee();
+
+	AddSC_SnakeTrap();
+	AddSC_CrimsonCannon();
+	AddSC_TimbermawAncestor();
+	AddSC_Shahram();
+	AddSC_EmeraldDragonWhelp();
+	AddSC_BattleChicken();
+	AddSC_ExplosiveSheep();
+
+	// -- Honor --
 
     // -- Item --
     AddSC_item_scripts();

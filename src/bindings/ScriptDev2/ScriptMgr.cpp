@@ -534,6 +534,7 @@ extern void AddSC_boss_warp_splinter();
 extern void AddSC_boss_kaelthas();
 extern void AddSC_boss_void_reaver();
 extern void AddSC_boss_high_astromancer_solarian();
+extern void AddSC_boss_alar();
 extern void AddSC_instance_the_eye();
 extern void AddSC_the_eye();
 
@@ -1432,6 +1433,7 @@ void ScriptsInit()
     AddSC_boss_kaelthas();
     AddSC_boss_void_reaver();
     AddSC_boss_high_astromancer_solarian();
+	 AddSC_boss_alar();
     AddSC_instance_the_eye();
     AddSC_the_eye();
 
