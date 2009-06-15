@@ -3192,7 +3192,8 @@ void Spell::EffectDispel(uint32 i)
                     continue;
             }
             // Add aura to dispel list
-            dispel_list.push_back(aur);
+	    for(uint32 stack_amount = 0; stack_amount < aur->GetStackAmount(); ++stack_amount)
+	        dispel_list.push_back(aur);
         }
     }
     // Ok if exist some buffs for dispel try dispel it
@@ -3230,6 +3231,7 @@ void Spell::EffectDispel(uint32 i)
                 {
                     j = dispel_list.erase(j);
                     --list_size;
+                   break;
                 }
                 else
                     ++j;
@@ -3250,7 +3252,13 @@ void Spell::EffectDispel(uint32 i)
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(j->first);
                 data << uint32(spellInfo->Id);              // Spell Id
                 data << uint8(0);                           // 0 - dispeled !=0 cleansed
-                unitTarget->RemoveAurasDueToSpellByDispel(spellInfo->Id, j->second, m_caster);
+                if(spellInfo->StackAmount!= 0)
+                {
+                    //Why are Aura's Removed by EffIndex? Auras should be removed as a whole.....
+                    unitTarget->RemoveSingleAuraFromStackByDispel(spellInfo->Id);
+                }
+                else
+                    unitTarget->RemoveAurasDueToSpellByDispel(spellInfo->Id, j->second, m_caster);
             }
             m_caster->SendMessageToSet(&data, true);
 

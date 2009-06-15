@@ -4570,6 +4570,31 @@ void Unit::RemoveAurasDueToSpellByCancel(uint32 spellId)
     }
 }
 
+void Unit::RemoveSingleAuraFromStackByDispel(uint32 spellId)
+{
+    for (AuraMap::iterator iter = m_Auras.begin(); iter != m_Auras.end(); )
+    {
+        Aura *aur = iter->second;
+        if (aur->GetId() == spellId)
+        {
+            if(iter->second->GetStackAmount() > 1)
+            {
+                // reapply modifier with reduced stack amount
+                iter->second->ApplyModifier(false,true);
+                iter->second->SetStackAmount(iter->second->GetStackAmount()-1);
+                iter->second->ApplyModifier(true,true);
+
+                iter->second->UpdateSlotCounterAndDuration();
+                return; // not remove aura if stack amount > 1
+            }
+            else
+                RemoveAura(iter,AURA_REMOVE_BY_DISPEL);
+        }
+        else
+            ++iter;
+    }
+}
+
 void Unit::RemoveAurasWithDispelType( DispelType type )
 {
     // Create dispel mask by dispel type

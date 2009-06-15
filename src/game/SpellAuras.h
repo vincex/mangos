@@ -302,6 +302,9 @@ class MANGOS_DLL_SPEC Aura
 
         void PeriodicTick();
         void PeriodicDummyTick();
+
+        int32 GetStackAmount() {return m_stackAmount;}
+		 void SetStackAmount(int32 amount) {m_stackAmount=amount;}
     protected:
         Aura(SpellEntry const* spellproto, uint32 eff, int32 *currentBasePoints, Unit *target, Unit *caster = NULL, Item* castItem = NULL);
 
