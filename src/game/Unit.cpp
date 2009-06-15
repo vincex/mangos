@@ -8912,6 +8912,10 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
         case SPELLFAMILY_HUNTER:
         case SPELLFAMILY_ROGUE:
 		case SPELLFAMILY_GENERIC:
+			if (spellProto->Id == 37675){
+				CastingTime = 3500;
+				break;
+			}
             CastingTime = 0;
             break;
         default:
