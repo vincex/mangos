@@ -4053,9 +4053,6 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
         if(need)
             m_targets.setUnitTarget(target);
 
-	if( ((Creature*)magnet)->isTotem() && magnet->isAlive() )
-		magnet->DealDamage(magnet, magnet->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-
         Unit* _target = m_targets.getUnitTarget();
 
         if(_target)                                         //for target dead/target not valid
@@ -4965,6 +4962,10 @@ Unit* Spell::SelectMagnetTarget()
                 {
                     target = magnet;
                     m_targets.setUnitTarget(target);
+					
+                    if( ((Creature*)magnet)->isTotem() && magnet->isAlive() )
+                        magnet->DealDamage(magnet, magnet->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+
                     break;
                 }
             }
