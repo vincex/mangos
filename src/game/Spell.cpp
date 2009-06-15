@@ -3750,6 +3750,10 @@ SpellCastResult Spell::CheckCast(bool strict)
                     (!m_targets.getItemTarget() || !m_targets.getItemTarget()->GetProto()->LockID || m_targets.getItemTarget()->GetOwner() != m_caster ) )
                     return SPELL_FAILED_BAD_TARGETS;
 
+		//Do not open go with immunity
+		if ( m_caster->HasAuraType(SPELL_AURA_SCHOOL_IMMUNITY) )
+ 		    return SPELL_FAILED_CASTER_AURASTATE;
+
                 // In BattleGround players can use only flags and banners
                 if( ((Player*)m_caster)->InBattleGround() &&
                     !((Player*)m_caster)->isAllowUseBattleGroundObject() )
