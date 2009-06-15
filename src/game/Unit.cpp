@@ -3216,7 +3216,7 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell)
         int32 effect_mech = GetEffectMechanic(spell, eff);
         if (effect_mech)
         {
-            int32 temp = pVictim->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_MECHAN
+            int32 temp = pVictim->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_MECHANIC_RESISTANCE, effect_mech);
             if (resist_mech < temp)
                 resist_mech = temp;
         }
@@ -3381,7 +3381,7 @@ SpellMissInfo Unit::SpellHitResult(Unit *pVictim, SpellEntry const *spell, bool 
         }
     // All positive spells can`t miss
     // TODO: client not show miss log for this spells - so need find info for this in dbc and use it!
-    if (IsPositiveSpell(spell->Id)&&(!IsHostileTo(pVictim))))
+    if (IsPositiveSpell(spell->Id)&&(!IsHostileTo(pVictim)))
         return SPELL_MISS_NONE;
 
     // Check for immune (use charges)
