@@ -677,7 +677,8 @@ enum MangosStrings
     LANG_DIST_ARENA_POINTS_TEAM_START   = 744,
     LANG_DIST_ARENA_POINTS_TEAM_END     = 745,
     LANG_DIST_ARENA_POINTS_END          = 746,
-    // Room for batleground/arena strings 747-799 not used
+
+   // Room for batleground/arena strings 747-799 not used
 
     // in game strings
     //                                  = 800, not used
@@ -756,6 +757,41 @@ enum MangosStrings
 
     // Use for not-in-offcial-sources patches
     //                                    10000-10999
+    LANG_BG_AV_ALLY                     = 10747,
+    LANG_BG_AV_HORDE                    = 10748,
+    LANG_BG_AV_TOWER_TAKEN              = 10749,
+    LANG_BG_AV_TOWER_ASSAULTED          = 10750,
+    LANG_BG_AV_TOWER_DEFENDED           = 10751,
+    LANG_BG_AV_GRAVE_TAKEN              = 10752,
+    LANG_BG_AV_GRAVE_DEFENDED           = 10753,
+    LANG_BG_AV_GRAVE_ASSAULTED          = 10754,
+    LANG_BG_AV_MINE_TAKEN               = 10755,
+    LANG_BG_AV_MINE_NORTH               = 10756,
+    LANG_BG_AV_MINE_SOUTH               = 10757,
+
+    LANG_BG_AV_NODE_GRAVE_STORM_AID     = 10758,
+    LANG_BG_AV_NODE_TOWER_DUN_S         = 10759,
+    LANG_BG_AV_NODE_TOWER_DUN_N         = 10760,
+    LANG_BG_AV_NODE_GRAVE_STORMPIKE     = 10761,
+    LANG_BG_AV_NODE_TOWER_ICEWING       = 10762,
+    LANG_BG_AV_NODE_GRAVE_STONE         = 10763,
+    LANG_BG_AV_NODE_TOWER_STONE         = 10764,
+    LANG_BG_AV_NODE_GRAVE_SNOW          = 10765,
+    LANG_BG_AV_NODE_TOWER_ICE           = 10766,
+    LANG_BG_AV_NODE_GRAVE_ICE           = 10767,
+    LANG_BG_AV_NODE_TOWER_POINT         = 10768,
+    LANG_BG_AV_NODE_GRAVE_FROST         = 10769,
+    LANG_BG_AV_NODE_TOWER_FROST_E       = 10770,
+    LANG_BG_AV_NODE_TOWER_FROST_W       = 10771,
+    LANG_BG_AV_NODE_GRAVE_FROST_HUT     = 10772,
+
+    LANG_BG_AV_ONEMINTOSTART            = 10773,
+    LANG_BG_AV_HALFMINTOSTART           = 10774,
+    LANG_BG_AV_STARTED                  = 10775,
+    LANG_BG_AV_A_NEAR_LOSE              = 10776,
+    LANG_BG_AV_H_NEAR_LOSE              = 10777,
+    LANG_BG_AV_H_CAPTAIN_DEAD           = 10778,
+    LANG_BG_AV_A_CAPTAIN_DEAD           = 10779,
 
     // Use for custom patches             11000-11999
 

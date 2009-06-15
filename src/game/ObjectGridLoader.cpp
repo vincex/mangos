@@ -25,6 +25,7 @@
 #include "Corpse.h"
 #include "World.h"
 #include "CellImpl.h"
+#include "BattleGround.h"
 
 class MANGOS_DLL_DECL ObjectGridRespawnMover
 {
@@ -128,7 +129,8 @@ void LoadHelper(CellGuidSet const& guid_set, CellPair &cell, GridRefManager<T> &
             map->AddToActive(obj);
 
         ++count;
-
+        if(map->IsBattleGround() && ((BattleGroundMap*)map)->GetBG())
+            ((BattleGroundMap*)map)->GetBG()->OnObjectDBLoad(obj);
     }
 }
 

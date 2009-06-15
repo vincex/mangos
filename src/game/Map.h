@@ -41,6 +41,7 @@ class WorldPacket;
 class InstanceData;
 class Group;
 class InstanceSave;
+class BattleGround;
 
 
 typedef ACE_RW_Thread_Mutex GridRWLock;
@@ -428,6 +429,10 @@ class MANGOS_DLL_SPEC BattleGroundMap : public Map
         bool CanEnter(Player* player);
         void SetUnload();
         void UnloadAll(bool pForce);
+        BattleGround* GetBG() { return m_bg; }
+        void SetBG(BattleGround* bg) { m_bg = bg; }
+    private:
+        BattleGround* m_bg;
 };
 
 /*inline
