@@ -8695,6 +8695,15 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
         }
     }
 
+    // .. taken pct: Blessed life
+    AuraList const& mTriggerAuras = pVictim->GetAurasByType(SPELL_AURA_PROC_TRIGGER_SPELL);
+    for(AuraList::const_iterator i = mTriggerAuras.begin(); i != mTriggerAuras.end(); ++i)
+        if( ( (*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_PALADIN ) && ( (*i)->GetSpellProto()->SpellIconID == 2137 ) )     // Blessed Life
+            if(roll_chance_i((*i)->GetSpellProto()->procChance))
+            {
+                TakenTotalMod *= 0.5f;
+            }
+
     // Distribute Damage over multiple effects, reduce by AoE
     CastingTime = GetCastingTimeForBonus( spellProto, damagetype, CastingTime );
 
@@ -9597,6 +9606,15 @@ void Unit::MeleeDamageBonus(Unit *pVictim, uint32 *pdamage,WeaponAttackType attT
                 break;
         }
     }
+
+    // .. taken pct: Blessed life
+    AuraList const& mTriggerAuras = pVictim->GetAurasByType(SPELL_AURA_PROC_TRIGGER_SPELL);
+    for(AuraList::const_iterator i = mTriggerAuras.begin(); i != mTriggerAuras.end(); ++i)
+        if( ( (*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_PALADIN ) && ( (*i)->GetSpellProto()->SpellIconID == 2137 ) )     // Blessed Life
+            if(roll_chance_i((*i)->GetSpellProto()->procChance))
+            {
+                TakenTotalMod *= 0.5f;
+            }
 
     if(attType != RANGED_ATTACK)
     {
