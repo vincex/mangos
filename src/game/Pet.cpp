@@ -638,7 +638,7 @@ void Pet::RegenerateFocus()
     AuraList const& ModPowerRegenPCTAuras = GetAurasByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
     for(AuraList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
         if ((*i)->GetModifier()->m_miscvalue == POWER_FOCUS)
-            addvalue *= ((*i)->GetModifier()->m_amount + 100) / 100.0f;
+            addvalue *= ((*i)->GetModifier()->m_amount * (*i)->m_stackAmount + 100) / 100.0f;
 
     ModifyPower(POWER_FOCUS, (int32)addvalue);
 }
@@ -1058,6 +1058,7 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
     {
         case SUMMON_PET:
         {
+            int32 m_bonusMeleedamage = 0;
             if(owner->GetTypeId() == TYPEID_PLAYER)
             {
                 switch(owner->getClass())
@@ -1083,13 +1084,20 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
                         SetBonusDamage( int32(val));
                         break;
                     }
+                    case CLASS_PRIEST: 
+                    {
+                        //60% damage bonus shadow del pretedviso per i 10hit = 6% bonus damage melee per hit
+                        uint32 shadow = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_SHADOW);
+                        m_bonusMeleedamage = (int32 (shadow * 0.063f));
+                        break;
+                    }
                     default:
                         break;
                 }
             }
 
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)) );
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)) );
+            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)+m_bonusMeleedamage) );
+            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)+m_bonusMeleedamage) );
 
             //SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, float(cinfo->attackpower));
 

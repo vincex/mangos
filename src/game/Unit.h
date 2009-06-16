@@ -75,7 +75,7 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_MOUNTING            = 0x00020000,   // 17   removed by mounting
     AURA_INTERRUPT_FLAG_NOT_SEATED          = 0x00040000,   // 18   removed by standing up
     AURA_INTERRUPT_FLAG_CHANGE_MAP          = 0x00080000,   // 19   leaving map/getting teleported
-    AURA_INTERRUPT_FLAG_UNK20               = 0x00100000,   // 20
+    AURA_INTERRUPT_FLAG_LOST_SELECTION      = 0x00100000,   // 20
     AURA_INTERRUPT_FLAG_UNK21               = 0x00200000,   // 21
     AURA_INTERRUPT_FLAG_UNK22               = 0x00400000,   // 22
     AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT    = 0x00800000,   // 23   removed by entering pvp combat
@@ -1177,6 +1177,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         void RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode = AURA_REMOVE_BY_DEFAULT);
         void RemoveAura(uint32 spellId, uint32 effindex, Aura* except = NULL);
+ 	     void RemoveSingleAuraFromStackByDispel(uint32 spellId);
         void RemoveSingleAuraFromStack(uint32 spellId, uint32 effindex);
         void RemoveAurasDueToSpell(uint32 spellId, Aura* except = NULL);
         void RemoveAurasDueToItemSpell(Item* castItem,uint32 spellId);

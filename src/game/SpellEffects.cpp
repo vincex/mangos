@@ -534,7 +534,10 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                     Unit::AuraList const& auras = unitTarget->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
                     for(Unit::AuraList::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr)
                         if((*itr)->GetId() == 31803 && (*itr)->GetCasterGUID()==m_caster->GetGUID())
-                            ++stacks;
+                            {
+                                stacks = (*itr)->GetStackAmount(); 
+                                break;
+                            }  
                     if(!stacks)
                         //No damage if the target isn't affected by this
                         damage = -1;
@@ -859,16 +862,12 @@ void Spell::EffectDummy(uint32 i)
                 }
                 case 28730:                                 // Arcane Torrent (Mana)
                 {
-                    int32 count = 0;
-                    Unit::AuraList const& m_dummyAuras = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
-                    for(Unit::AuraList::const_iterator i = m_dummyAuras.begin(); i != m_dummyAuras.end(); ++i)
-                        if ((*i)->GetId() == 28734)
-                            ++count;
-                    if (count)
-                    {
-                        m_caster->RemoveAurasDueToSpell(28734);
-                        int32 bp = damage * count;
+                    Aura * dummy = m_caster->GetDummyAura(28734);
+                    if (dummy)
+                    {                        
+                        int32 bp = damage * dummy->m_stackAmount;
                         m_caster->CastCustomSpell(m_caster, 28733, &bp, NULL, NULL, true);
+                        m_caster->RemoveAurasDueToSpell(28734);
                     }
                     return;
                 }
@@ -1770,7 +1769,9 @@ void Spell::EffectTriggerSpell(uint32 i)
                 if( // ignore positive and passive auras
                     !iter->second->IsPositive() && !iter->second->IsPassive() &&
                     // ignore physical auras
-                    (GetSpellSchoolMask(iter->second->GetSpellProto()) & SPELL_SCHOOL_MASK_NORMAL)==0 )
+                    (GetSpellSchoolMask(iter->second->GetSpellProto()) & SPELL_SCHOOL_MASK_NORMAL)==0 
+                    //ignore deserter
+                    && iter->second->GetSpellProto()->Id != 26013)
                 {
                     m_caster->RemoveAurasDueToSpell(iter->second->GetSpellProto()->Id);
                     iter = Auras.begin();
@@ -2319,7 +2320,7 @@ void Spell::EffectHeal( uint32 /*i*/ )
             Unit::AuraList const& mDummyAuras = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
             for(Unit::AuraList::const_iterator i = mDummyAuras.begin(); i != mDummyAuras.end(); ++i)
                 if((*i)->GetId() == 45062)
-                    damageAmount+=(*i)->GetModifier()->m_amount;
+                    damageAmount+=(*i)->GetModifier()->m_amount * (*i)->m_stackAmount;
             if (damageAmount)
                 m_caster->RemoveAurasDueToSpell(45062);
 
@@ -2807,7 +2808,7 @@ void Spell::EffectOpenLock(uint32 effIndex)
             if(BattleGround *bg = player->GetBattleGround())
             {
                 // check if it's correct bg
-                if(bg && bg->GetTypeID() == BATTLEGROUND_AB)
+                if(bg->GetTypeID() == BATTLEGROUND_AB || bg->GetTypeID() == BATTLEGROUND_AV)
                     bg->EventPlayerClickedOnFlag(player, gameObjTarget);
                 return;
             }
@@ -3194,7 +3195,8 @@ void Spell::EffectDispel(uint32 i)
                     continue;
             }
             // Add aura to dispel list
-            dispel_list.push_back(aur);
+	    for(uint32 stack_amount = 0; stack_amount < aur->GetStackAmount(); ++stack_amount)
+	        dispel_list.push_back(aur);
         }
     }
     // Ok if exist some buffs for dispel try dispel it
@@ -3232,6 +3234,7 @@ void Spell::EffectDispel(uint32 i)
                 {
                     j = dispel_list.erase(j);
                     --list_size;
+                   break;
                 }
                 else
                     ++j;
@@ -3252,7 +3255,13 @@ void Spell::EffectDispel(uint32 i)
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(j->first);
                 data << uint32(spellInfo->Id);              // Spell Id
                 data << uint8(0);                           // 0 - dispeled !=0 cleansed
-                unitTarget->RemoveAurasDueToSpellByDispel(spellInfo->Id, j->second, m_caster);
+                if(spellInfo->StackAmount!= 0)
+                {
+                    //Why are Aura's Removed by EffIndex? Auras should be removed as a whole.....
+                    unitTarget->RemoveSingleAuraFromStackByDispel(spellInfo->Id);
+                }
+                else
+                    unitTarget->RemoveAurasDueToSpellByDispel(spellInfo->Id, j->second, m_caster);
             }
             m_caster->SendMessageToSet(&data, true);
 

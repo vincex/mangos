@@ -2515,6 +2515,25 @@ void Spell::finish(bool ok)
     if (m_caster->GetTypeId() == TYPEID_PLAYER)
         ((Player*)m_caster)->RemoveSpellMods(this);
 
+	 //holy nova heal
+    if(m_spellInfo->SpellFamilyName == SPELLFAMILY_PRIEST && m_spellInfo->SpellIconID == 1874)
+    {
+        int holy_nova_heal = 0;
+        switch(m_spellInfo->Id)
+        {
+            case 15237: holy_nova_heal = 23455; break;
+            case 15430: holy_nova_heal = 23458; break;
+            case 15431: holy_nova_heal = 23459; break;
+            case 27799: holy_nova_heal = 27803; break;
+            case 27800: holy_nova_heal = 27804; break;
+            case 27801: holy_nova_heal = 27805; break;
+            case 25331: holy_nova_heal = 25329; break;
+            default:break;
+        }
+        if(holy_nova_heal)
+            m_caster->CastSpell(m_caster, holy_nova_heal, true);
+    }
+
     //handle SPELL_AURA_ADD_TARGET_TRIGGER auras
     Unit::AuraList const& targetTriggers = m_caster->GetAurasByType(SPELL_AURA_ADD_TARGET_TRIGGER);
     for(Unit::AuraList::const_iterator i = targetTriggers.begin(); i != targetTriggers.end(); ++i)
@@ -2534,7 +2553,8 @@ void Spell::finish(bool ok)
                     int32 chance = m_caster->CalculateSpellDamage(auraSpellInfo, auraSpellIdx, (*i)->GetBasePoints(),unit);
 
                     if(roll_chance_i(chance))
-                        m_caster->CastSpell(unit, auraSpellInfo->EffectTriggerSpell[auraSpellIdx], true, NULL, (*i));
+                        for ( int j=0; j != (*i)->m_stackAmount; ++j)
+                            m_caster->CastSpell(unit, auraSpellInfo->EffectTriggerSpell[auraSpellIdx], true, NULL, (*i));
                 }
             }
         }
@@ -3750,6 +3770,10 @@ SpellCastResult Spell::CheckCast(bool strict)
                     (!m_targets.getItemTarget() || !m_targets.getItemTarget()->GetProto()->LockID || m_targets.getItemTarget()->GetOwner() != m_caster ) )
                     return SPELL_FAILED_BAD_TARGETS;
 
+		//Do not open go with immunity
+		if ( m_caster->HasAuraType(SPELL_AURA_SCHOOL_IMMUNITY) )
+ 		    return SPELL_FAILED_CASTER_AURASTATE;
+
                 // In BattleGround players can use only flags and banners
                 if( ((Player*)m_caster)->InBattleGround() &&
                     !((Player*)m_caster)->isAllowUseBattleGroundObject() )
@@ -4938,6 +4962,10 @@ Unit* Spell::SelectMagnetTarget()
                 {
                     target = magnet;
                     m_targets.setUnitTarget(target);
+					
+                    if( ((Creature*)magnet)->isTotem() && magnet->isAlive() )
+                        magnet->DealDamage(magnet, magnet->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+
                     break;
                 }
             }
