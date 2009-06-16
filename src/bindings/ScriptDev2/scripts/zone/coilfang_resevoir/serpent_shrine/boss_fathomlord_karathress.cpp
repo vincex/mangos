@@ -452,7 +452,7 @@ struct MANGOS_DLL_DECL boss_fathomguard_tidalvessAI : public ScriptedAI
 		//m_uiWindfury_Timer
         if (m_uiWindfury_Timer < uiDiff)
         {
-            DoCast(m_creature->getVictim(), SPELL_WINDFURY);
+            DoCast(m_creature, SPELL_WINDFURY);
             m_uiWindfury_Timer = 25000+rand()%5000;
         }else m_uiWindfury_Timer -= uiDiff;
 
@@ -461,11 +461,11 @@ struct MANGOS_DLL_DECL boss_fathomguard_tidalvessAI : public ScriptedAI
 		{
 			switch(rand()%3)
 			{
-				case 0: DoCast(this,SPELL_SPITFIRE_TOTEM);
+				case 0: DoCast(m_creature,SPELL_SPITFIRE_TOTEM);
 					break;
-				case 1: DoCast(this,SPELL_POISON_CLEANSING_TOTEM);
+				case 1: DoCast(m_creature,SPELL_POISON_CLEANSING_TOTEM);
 					break;
-				case 2: DoCast(this,SPELL_EARTHBIND_TOTEM);
+				case 2: DoCast(m_creature,SPELL_EARTHBIND_TOTEM);
 					break;
 			}
 			m_uiTotem_Timer = 8000+rand()%5000;
