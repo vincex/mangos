@@ -17,7 +17,7 @@
 /* ScriptData
 SDName: Boss_Fathomlord_Karathress
 SD%Complete: 60
-SDComment: Missing Multishot, Totems, Windfury, Whirlwind
+SDComment: Whirlwind
 SDCategory: Coilfang Resevoir, Serpent Shrine Cavern
 EndScriptData */
 
@@ -52,12 +52,14 @@ enum
     SPELL_MULTI_TOSS                = 38366,
     SPELL_SUMMON_FATHOM_LURKER      = 38433,
     SPELL_SUMMON_FATHOM_SPOREBAT    = 38431,
+	SPELL_MULTISHOT                 = 29576,
 
     //Tidalvess spells
     SPELL_FROST_SHOCK               = 38234,
     SPELL_SPITFIRE_TOTEM            = 38236,
     SPELL_POISON_CLEANSING_TOTEM    = 38306,
     SPELL_EARTHBIND_TOTEM           = 38304,
+	SPELL_WINDFURY                  = 38229,
 
     //Caribdis Spells
     SPELL_WATER_BOLT_VOLLEY         = 38335,
@@ -271,12 +273,14 @@ struct MANGOS_DLL_DECL boss_fathomguard_sharkkisAI : public ScriptedAI
     uint32 m_uiHurlTrident_Timer;
     uint32 m_uiLeechingThrow_Timer;
     uint32 m_uiTheBeastWithin_Timer;
+	uint32 m_uiMultishot_Timer;
 
     void Reset()
     {
         m_uiHurlTrident_Timer    = 2500;
         m_uiLeechingThrow_Timer  = 20000;
         m_uiTheBeastWithin_Timer = 30000;
+		m_uiMultishot_Timer = 5000;
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_KARATHRESS_EVENT, NOT_STARTED);
@@ -366,6 +370,13 @@ struct MANGOS_DLL_DECL boss_fathomguard_sharkkisAI : public ScriptedAI
             m_uiTheBeastWithin_Timer = 30000;
         }else m_uiTheBeastWithin_Timer -= uiDiff;
 
+		//m_uiMultishot_Timer
+        if (m_uiMultishot_Timer < uiDiff)
+        {
+            DoCast(m_creature, SPELL_MULTISHOT);
+            m_uiMultishot_Timer = 5000;
+        }else m_uiMultishot_Timer -= uiDiff;
+
         DoMeleeAttackIfReady();
     }
 };
@@ -383,10 +394,14 @@ struct MANGOS_DLL_DECL boss_fathomguard_tidalvessAI : public ScriptedAI
 
     // timers
     uint32 m_uiFrostShock_Timer;
+	uint32 m_uiWindfury_Timer;
+	uint32 m_uiTotem_Timer;
 
     void Reset()
     {
         m_uiFrostShock_Timer = 25000;
+		m_uiWindfury_Timer = 25000;
+		m_uiTotem_Timer = 10000;
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_KARATHRESS_EVENT, NOT_STARTED);
@@ -433,6 +448,28 @@ struct MANGOS_DLL_DECL boss_fathomguard_tidalvessAI : public ScriptedAI
             DoCast(m_creature->getVictim(), SPELL_FROST_SHOCK);
             m_uiFrostShock_Timer = 25000+rand()%5000;
         }else m_uiFrostShock_Timer -= uiDiff;
+
+		//m_uiWindfury_Timer
+        if (m_uiWindfury_Timer < uiDiff)
+        {
+            DoCast(m_creature->getVictim(), SPELL_WINDFURY);
+            m_uiWindfury_Timer = 25000+rand()%5000;
+        }else m_uiWindfury_Timer -= uiDiff;
+
+		//m_uiTotem_Timer
+		if (m_uiTotem_Timer < uiDiff)
+		{
+			switch(rand()%3)
+			{
+				case 0: DoCast(this,SPELL_SPITFIRE_TOTEM);
+					break;
+				case 1: DoCast(this,SPELL_POISON_CLEANSING_TOTEM);
+					break;
+				case 2: DoCast(this,SPELL_EARTHBIND_TOTEM);
+					break;
+			}
+			m_uiTotem_Timer = 8000+rand()%5000;
+		}else m_uiTotem_Timer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
