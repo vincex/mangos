@@ -52,7 +52,7 @@ enum
     SPELL_MULTI_TOSS                = 38366,
     SPELL_SUMMON_FATHOM_LURKER      = 38433,
     SPELL_SUMMON_FATHOM_SPOREBAT    = 38431,
-	SPELL_MULTISHOT                 = 29576,
+    SPELL_MULTISHOT                 = 38366,
 
     //Tidalvess spells
     SPELL_FROST_SHOCK               = 38234,
