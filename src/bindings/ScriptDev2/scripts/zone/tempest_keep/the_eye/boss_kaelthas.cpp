@@ -172,10 +172,7 @@ struct MANGOS_DLL_DECL advisorbase_ai : public ScriptedAI
         m_creature->SetStandState(UNIT_STAND_STATE_STAND);
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-		// double health for phase 3
-		m_creature->SetMaxHealth(m_creature->GetMaxHealth() * 2);
-		m_bDoubled_Health = true;
-
+		
         //reset encounter
         if (m_pInstance && (m_pInstance->GetData(DATA_KAELTHASEVENT) == 1 || m_pInstance->GetData(DATA_KAELTHASEVENT) == 3))
         {
@@ -203,6 +200,9 @@ struct MANGOS_DLL_DECL advisorbase_ai : public ScriptedAI
     void Revive(Unit* Target)
     {
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+		// double health for phase 3
+		m_creature->SetMaxHealth(m_creature->GetMaxHealth() * 2);
+		m_bDoubled_Health = true;
         m_creature->SetHealth(m_creature->GetMaxHealth());
         m_creature->SetStandState(UNIT_STAND_STATE_STAND);
 
