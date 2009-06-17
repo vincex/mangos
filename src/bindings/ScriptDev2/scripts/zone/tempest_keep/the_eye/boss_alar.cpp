@@ -110,7 +110,7 @@ struct MANGOS_DLL_DECL boss_alarAI : public ScriptedAI
 
         m_creature->SetFloatValue(OBJECT_FIELD_SCALE_X, DefaultSize);
         m_creature->SetUInt32Value(UNIT_FIELD_DISPLAYID, DefaultModel);
-        m_creature->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_FIRE, true);
+        m_creature->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_FIRE, true);
         m_creature->RemoveUnitMovementFlag(MOVEMENTFLAG_WALK_MODE);
 
         if(pInstance)
@@ -258,7 +258,7 @@ struct MANGOS_DLL_DECL boss_alarAI : public ScriptedAI
                     FakeDeath = false;
                     break;
                 case 6:
-                    m_creature->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_FIRE, false);
+                    m_creature->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_FIRE, false);
                     m_creature->SetFloatValue(OBJECT_FIELD_SCALE_X, DefaultSize/4.0f);
                     DoCast(m_creature->getVictim(), SPELL_DIVE_BOMB_VISUAL);
                     DiveBombCastDelay_Timer = 4000;
@@ -454,7 +454,7 @@ struct MANGOS_DLL_DECL boss_alarAI : public ScriptedAI
 
             if (DiveBombCastDelay_Timer < diff)
             {
-                m_creature->ApplySpellImmune(0, IMMUNITY_SCHOOL, SPELL_SCHOOL_MASK_FIRE, true);
+                m_creature->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_FIRE, true);
                 m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 m_creature->SetDisplayId(11686);
