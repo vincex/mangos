@@ -26,24 +26,24 @@ EndScriptData */
 
 enum
 {
-	SAY_SUBMERGE			= -1549000,
+	SAY_SUBMERGE                    = -1549000,
 
-	SPELL_SPOUT				= 37433,
-	SPELL_GEYSER			= 37478,
-	SPELL_WHIRL				= 37660,
-	SPELL_WATERBOLT			= 37138,
-	SPELL_SUBMERGE			= 37550,
-	SPELL_EMERGE			= 20568,	//Ragnaros' Emerge :P as long as it works I dont care xP
+	SPELL_SPOUT                     = 37433,
+	SPELL_GEYSER                    = 37478,
+	SPELL_WHIRL                     = 37660,
+	SPELL_WATERBOLT                 = 37138,
+	SPELL_SUBMERGE                  = 37550,
+	SPELL_EMERGE                    = 20568,	//Ragnaros' Emerge :P as long as it works I dont care xP
 
-	MOBID_COILFANG_GUARDIAN = 21873,
-	MOBID_COILFANG_AMBUSHER = 21865,
+	MOBID_COILFANG_GUARDIAN         = 21873,
+	MOBID_COILFANG_AMBUSHER         = 21865,
 
 	//Ambusher spells
-	SPELL_MULTISHOT			= 37790,
-	SPELL_SHOOT         	= 37770,
+	SPELL_MULTISHOT	                = 37790,
+	SPELL_SHOOT                     = 37770,
 	//Guardian spells
-	SPELL_ARCINGSMASH		= 38761, // Wrong SpellId. Can't find the right one.
-	SPELL_HAMSTRING			= 26211,
+	SPELL_ARCINGSMASH               = 38761, // Wrong SpellId. Can't find the right one.
+	SPELL_HAMSTRING	                = 26211,
 };
 
  #define PI 3.1415
@@ -60,116 +60,113 @@ float AddPos[9][3] =
     {63.897900, -378.984924, -19.182686},	//MOVE_AMBUSHER_6 X, Y, Z
     {34.447250, -387.333618, -19.182686},	//MOVE_GUARDIAN_1 X, Y, Z
     {14.388216, -423.468018, -19.625271},	//MOVE_GUARDIAN_2 X, Y, Z
-	{42.471519, -445.115295, -19.769423}	//MOVE_GUARDIAN_3 X, Y, Z
+    {42.471519, -445.115295, -19.769423}	//MOVE_GUARDIAN_3 X, Y, Z
 };
 
 struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
 {
-    boss_the_lurker_belowAI(Creature *pCreature) : Scripted_NoMovementAI(pCreature) 
-	{
-		m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-		Reset();
-	}
+    boss_the_lurker_belowAI(Creature *pCreature) : Scripted_NoMovementAI(pCreature)
+    {
+        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        Reset();
+    }
 
-	ScriptedInstance* m_pInstance;
-	
-	uint32 SpoutTimer;
-	uint32 SVTimer;
-	uint32 PhaseTimer;
-	uint32 GeyserTimer;
-	uint32 WaterboltTimer;
-	uint32 WhirlTimer;
-	uint32 OrientationUpdated;
+    ScriptedInstance* m_pInstance;
+
+    uint32 SpoutTimer;
+    uint32 SVTimer;
+    uint32 PhaseTimer;
+    uint32 GeyserTimer;
+    uint32 WaterboltTimer;
+    uint32 WhirlTimer;
+    uint32 OrientationUpdated;
     uint32 WaterTimer;
     uint32 SpTimer;
-	float SpoutAngle;
-	std::map<uint64,bool>guids;
-	bool Spawned;
-	bool Submerged;
-	bool Clockwise;
-    bool InCombat;
-	Creature* Summoned;
+    float SpoutAngle;
+    std::map<uint64,bool>guids;
+    bool Spawned;
+    bool Submerged;
+    bool Clockwise;
+    //bool InCombat;
+    Creature* Summoned;
 
     void Reset()
     {
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         m_creature->SetFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_SUBMERGED);
         m_creature->setFaction(35);
-		m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
-		WhirlTimer = rand()%5000 + 15000;
-		PhaseTimer = 120000;
-		SpoutTimer = 45000;
-		SVTimer = 0;
-		OrientationUpdated = -1;
-		GeyserTimer = rand()%5000 + 15000;
-		WaterboltTimer = 3000;
-		Submerged = false;
-		Spawned = false;
-		Clockwise = true;
-		SpoutAngle = 0;
-		guids.clear();
-		SpTimer = 0;
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+        WhirlTimer = rand()%5000 + 15000;
+        PhaseTimer = 120000;
+        SpoutTimer = 45000;
+        SVTimer = 0;
+        OrientationUpdated = -1;
+        GeyserTimer = rand()%5000 + 15000;
+        WaterboltTimer = 3000;
+        Submerged = false;
+        Spawned = false;
+        Clockwise = true;
+        SpoutAngle = 0;
+        guids.clear();
+        SpTimer = 0;
         WaterTimer = 1000;
         //InCombat = false;
-		
+
         if (m_pInstance)
             m_pInstance->SetData(TYPE_THELURKER_EVENT, NOT_STARTED);
-	}
+    }
 
     void Aggro(Unit *who)
     {
         DoZoneInCombat();
         //InCombat = true;
-		
-		//DoScriptText(SAY_AGGRO, m_creature);
+
+        //DoScriptText(SAY_AGGRO, m_creature);
         if (m_pInstance)
             m_pInstance->SetData(TYPE_THELURKER_EVENT, IN_PROGRESS);
     }
 
     void JustDied(Unit* Killer)
     {
-	    //DoScriptText(SAY_DEATH, m_creature);
+        //DoScriptText(SAY_DEATH, m_creature);
         if (m_pInstance)
             m_pInstance->SetData(TYPE_THELURKER_EVENT, DONE);
     }
 
-	void UpdateAI(const uint32 diff)
+    void UpdateAI(const uint32 diff)
     {
+        if (WaterTimer < diff)  // "aggro boss"
+	{
+             if(m_pInstance->GetData(TYPE_THELURKER_EVENT) == NOT_STARTED) // se boss non killato proseguo
+             {
+             Map *pMap = m_creature->GetMap();
+             if (!pMap->IsDungeon())
+		return;
+             Map::PlayerList const &PlayerList = pMap->GetPlayers();
+             if (PlayerList.isEmpty())
+	        return;
+             for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
+             {
+                 if(Player* pPlayer = i->getSource())
+                 {
+                    if (!pPlayer->GetSession() || !pPlayer->isAlive())
+                        continue;
+                    if (!pPlayer->GetDistance(m_creature) < 1.5 && pPlayer->IsInWater()) //swim in center for pop the boss
+                    {
+                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        m_creature->RemoveFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_SUBMERGED);
+                        //DoScriptText(SAY_EMERGE, m_creature);
+                        DoCast(m_creature, SPELL_EMERGE);
+                        m_creature->setFaction(14);
+                        //InCombat = true;
+                     }
+		 }
+             }
+        }
+            WaterTimer = 1000;
+        } else WaterTimer -= diff;
 
-		if (WaterTimer < diff)  // "aggro boss"
-		{
-			if(m_pInstance->GetData(TYPE_THELURKER_EVENT) == NOT_STARTED) // se boss non killato proseguo
-			{			
-				Map *pMap = m_creature->GetMap();
-				if (!pMap->IsDungeon())
-					return;
-		
-				Map::PlayerList const &PlayerList = pMap->GetPlayers();
-				if (PlayerList.isEmpty())
-					return;
-			
-				for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
-				{
-					if(Player* pPlayer = i->getSource())
-					{
-						if (!pPlayer->GetSession() || !pPlayer->isAlive())
-							continue;
-						if (!pPlayer->GetDistance(m_creature) < 1.5 && pPlayer->IsInWater()) //swim in center for pop the boss
-							{
-								m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-								m_creature->RemoveFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_SUBMERGED);
-								//DoScriptText(SAY_EMERGE, m_creature);
-								DoCast(m_creature, SPELL_EMERGE);
-								m_creature->setFaction(14);
-								//InCombat = true;
-							}
-					}
-				}
-			}
-			WaterTimer = 1000;
-		} else WaterTimer -= diff;
-		
-		//Return since we have no target
+        //Return since we have no target
         if (!m_creature->SelectHostilTarget() || !m_creature->getVictim() )
             return;
 
@@ -183,7 +180,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
                     OrientationUpdated = 0;
                     Unit* target = SelectUnit(SELECT_TARGET_TOPAGGRO,0);
                     m_creature->SetUInt64Value(UNIT_FIELD_TARGET, 0);
-					//DoScriptText(SAY_SPOUT, m_creature);
+                    //DoScriptText(SAY_SPOUT, m_creature);
 
                     SpoutTimer = 5000;
 
@@ -194,9 +191,9 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
                     }
                     guids.clear();	//clear targets
                     return;
-                } 
-				else 
-				{
+                }
+                else
+                {
                     if(Clockwise)
                         SpoutAngle += PI/100;
                     else
@@ -230,7 +227,6 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
                         WhirlTimer = 5000;
                         if(Unit *pVictim = m_creature->getVictim())
                             m_creature->SetUInt64Value(UNIT_FIELD_TARGET, pVictim->GetGUID());
-                        
                     }
                 }
             }else SpoutTimer -= diff;
@@ -249,7 +245,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
 
             if(PhaseTimer < diff)
             {
-				DoScriptText(SAY_SUBMERGE, m_creature);
+                DoScriptText(SAY_SUBMERGE, m_creature);
                 DoCast(m_creature,SPELL_SUBMERGE);
                 PhaseTimer = 60000;
                 Submerged = true;

@@ -31,15 +31,23 @@ EndScriptData */
 3 - Fathom-Lord Karathress Event
 4 - Morogrim Tidewalker Event
 5 - Lady Vashj Event
+6 - Lurker Event (platform)
 */
 
-const int ENCOUNTERS    = 6;
+//Lurker Event defines
+#define SCALDING_WATER				37284
+#define MOB_COILFANG_FRENZY			21508
+#define MOB_COILFANG_FRENZY_CORPSE	21689
+const int MAX_HONOR_GUARD	= 3;
+
+const int ENCOUNTERS    = 7;
 const int MAX_GENERATOR = 4;
 
 struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 {
     instance_serpentshrine_cavern(Map* pMap) : ScriptedInstance(pMap) { Initialize(); };
 
+    uint64 m_uiLurker;
     uint64 m_uiSharkkis;
     uint64 m_uiTidalvess;
     uint64 m_uiCaribdis;
@@ -49,9 +57,14 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 
     uint32 m_uiShieldGenerator[MAX_GENERATOR];
     uint32 m_uiEncounter[ENCOUNTERS];
-
+	
+	std::set<uint64> m_uiHonorGuardGUID;
+	uint32 WaterTimer;
+	uint32 EventTimer;
+	
     void Initialize()
     {
+		m_uiLurker = 0;
         m_uiSharkkis = 0;
         m_uiTidalvess = 0;
         m_uiCaribdis = 0;
@@ -61,6 +74,11 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 
         memset(&m_uiShieldGenerator, 0, sizeof(m_uiShieldGenerator));
         memset(&m_uiEncounter, 0, sizeof(m_uiEncounter));
+		
+        //Lurker Event
+        WaterTimer = 1000;
+        EventTimer = 5000;
+        m_uiHonorGuardGUID.clear();
     }
 
     bool IsEncounterInProgress()
@@ -72,6 +90,77 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
         return false;
     }
 
+    void notifyFish()   
+    {
+            Map::PlayerList const& PlayerList = instance->GetPlayers();
+            if (PlayerList.isEmpty())
+                return;
+
+            for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
+                if(Player* pPlayer = i->getSource())
+                {
+                    pPlayer->GetSession()->SendNotification("The water started to boil..."); 
+                    pPlayer->GetSession()->SendNotification("...The Lurker Below is waiting...");
+                }
+            //summonare una ventina di pesci oppure scorrere i mob spawnati(e renderli friendly, intargettabili
+            // oppure gestire una pool di pesci			
+    }
+	
+    //Lurker Event instance Update
+    void Update(uint32 diff)
+    { 		
+        if(GetData(TYPE_THELURKER_EVENT) == DONE) // se lurker ucciso, non faccio nulla
+            return;
+        if (EventTimer < diff) //lurker platform check      
+        {
+            if (!m_uiHonorGuardGUID.empty())  //nel caso di mob non spawnati
+            {
+                uint32 Dead=0;  //contatore honor guard morti
+                for(std::set<uint64>::iterator i = m_uiHonorGuardGUID.begin(); i != m_uiHonorGuardGUID.end(); ++i)
+                    if (Creature* HonorGuard = instance->GetCreature(*i))
+                        if (HonorGuard->isDead())
+                            Dead++;	
+
+                if (Dead==MAX_HONOR_GUARD && GetData(TYPE_PLATFORM_EVENT)!=DONE)   //se gli honor guard sono tutti e 6 morti setto l'evento piattaforme fatto
+                {
+                        SetData(TYPE_PLATFORM_EVENT, DONE);
+                        notifyFish(); //informo tutti i player che l'acqua bolle e rendo visibili i pesci morti( o li spawno?)
+                }
+                else if (Dead==0)  //se non ho killato i 6 mob(o sono respawnati tutti e 6) imposto a not_started l'evento piattaforme
+                    SetData(TYPE_PLATFORM_EVENT, NOT_STARTED);
+            }
+            EventTimer = 5000;
+        }else EventTimer -=diff;
+
+        if (WaterTimer < diff) //water event
+        {
+            Map::PlayerList const& PlayerList = instance->GetPlayers();
+            if (PlayerList.isEmpty())
+   	            return;
+
+            for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
+            {
+                if(Player* pPlayer = i->getSource())
+                {
+                    if (pPlayer->IsInWater())   //se il pg è in acqua
+                    {
+                        if(GetData(TYPE_PLATFORM_EVENT) != DONE) // se l'evento piattaforme non è stato fatto summono i piranha
+                        {	
+                            Creature* Fishy = pPlayer->SummonCreature(MOB_COILFANG_FRENZY,pPlayer->GetPositionX(),pPlayer->GetPositionY(),pPlayer->GetPositionZ(),pPlayer->GetOrientation(),TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT,15000);
+                            if (Fishy) 
+                                Fishy->AI()->AttackStart(pPlayer);
+                        }
+                        else if (!pPlayer->HasAura(SCALDING_WATER,0))             //se il pg è in acqua ma l'evento piattaforme è fatto 
+                                pPlayer->CastSpell(pPlayer,SCALDING_WATER,true);  // e il pg non ha l'aura dell'acqua che bolle gliela casto
+                    }
+                    else if (pPlayer->HasAura(SCALDING_WATER,0) && !pPlayer->HasUnitMovementFlag(MOVEMENTFLAG_JUMPING)) // se il pg non è in acqua e ha l'aura la tolgo
+                            pPlayer->RemoveAurasDueToSpell(SCALDING_WATER);												// ma solo se non sta saltando fuori dall'acqua		
+                }
+            }			
+            WaterTimer = 1000;
+        }else WaterTimer -= diff;
+    }
+
     void OnCreatureCreate(Creature* pCreature)
     {
         switch(pCreature->GetEntry())
@@ -81,6 +170,8 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
             case 21966: m_uiSharkkis   = pCreature->GetGUID(); break;
             case 21965: m_uiTidalvess  = pCreature->GetGUID(); break;
             case 21964: m_uiCaribdis   = pCreature->GetGUID(); break;
+            case 21217: m_uiLurker     = pCreature->GetGUID(); break;
+            case 21218: m_uiHonorGuardGUID.insert(pCreature->GetGUID()); break; // dovrebbero essere 6 come le piattaforme attorno a lurker
         }
     }
 
@@ -121,6 +212,7 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                 m_uiEncounter[1] = uiData;
                 break;
             case TYPE_THELURKER_EVENT:
+                if (m_uiEncounter[2] == DONE) break;
                 m_uiEncounter[2] = uiData;
                 break;
             case TYPE_KARATHRESS_EVENT:
@@ -133,6 +225,9 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                 if (uiData == NOT_STARTED)
                     memset(&m_uiShieldGenerator, 0, sizeof(m_uiShieldGenerator));
                 m_uiEncounter[5] = uiData;
+                break;
+            case TYPE_PLATFORM_EVENT:
+                m_uiEncounter[6] = uiData;
                 break;
             case TYPE_SHIELDGENERATOR1:
                 m_uiShieldGenerator[0] = uiData;
@@ -170,6 +265,9 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 
             case TYPE_LADYVASHJ_EVENT:
                 return m_uiEncounter[5];
+
+            case TYPE_PLATFORM_EVENT:
+                return m_uiEncounter[6];
 
             case TYPE_SHIELDGENERATOR1:
                 return m_uiShieldGenerator[0];

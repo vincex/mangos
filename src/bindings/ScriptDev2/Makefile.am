@@ -173,6 +173,7 @@ scripts/zone/coilfang_resevoir/serpent_shrine/boss_fathomlord_karathress.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_hydross_the_unstable.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_lady_vashj.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_leotheras_the_blind.cpp \
+scripts/zone/coilfang_resevoir/serpent_shrine/boss_the_lurker_below.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_morogrim_tidewalker.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/def_serpent_shrine.h \
 scripts/zone/coilfang_resevoir/serpent_shrine/instance_serpent_shrine.cpp \
