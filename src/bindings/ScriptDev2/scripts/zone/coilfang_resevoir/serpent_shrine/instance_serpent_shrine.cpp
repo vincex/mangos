@@ -38,7 +38,7 @@ EndScriptData */
 #define SCALDING_WATER				37284
 #define MOB_COILFANG_FRENZY			21508
 #define MOB_COILFANG_FRENZY_CORPSE	21689
-const int MAX_HONOR_GUARD	= 3;
+const int MAX_HONOR_GUARD	= 6;
 
 const int ENCOUNTERS    = 7;
 const int MAX_GENERATOR = 4;
