@@ -136,12 +136,12 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
     void UpdateAI(const uint32 diff)
     {
         if (WaterTimer < diff)  // "aggro boss"
-	{
+        {
              if(m_pInstance->GetData(TYPE_THELURKER_EVENT) == NOT_STARTED) // se boss non killato proseguo
              {
              Map *pMap = m_creature->GetMap();
              if (!pMap->IsDungeon())
-		return;
+                return;
              Map::PlayerList const &PlayerList = pMap->GetPlayers();
              if (PlayerList.isEmpty())
 	        return;
@@ -160,7 +160,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
                         m_creature->setFaction(14);
                         //InCombat = true;
                      }
-		 }
+                 }
              }
         }
             WaterTimer = 1000;

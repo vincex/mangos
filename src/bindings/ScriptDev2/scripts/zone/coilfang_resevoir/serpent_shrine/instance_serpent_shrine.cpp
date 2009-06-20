@@ -57,14 +57,14 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 
     uint32 m_uiShieldGenerator[MAX_GENERATOR];
     uint32 m_uiEncounter[ENCOUNTERS];
-	
+
 	std::set<uint64> m_uiHonorGuardGUID;
 	uint32 WaterTimer;
 	uint32 EventTimer;
-	
+
     void Initialize()
     {
-		m_uiLurker = 0;
+        m_uiLurker = 0;
         m_uiSharkkis = 0;
         m_uiTidalvess = 0;
         m_uiCaribdis = 0;
@@ -74,7 +74,7 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 
         memset(&m_uiShieldGenerator, 0, sizeof(m_uiShieldGenerator));
         memset(&m_uiEncounter, 0, sizeof(m_uiEncounter));
-		
+
         //Lurker Event
         WaterTimer = 1000;
         EventTimer = 5000;
@@ -90,28 +90,27 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
         return false;
     }
 
-    void notifyFish()   
+    void notifyFish() 
     {
-            Map::PlayerList const& PlayerList = instance->GetPlayers();
-            if (PlayerList.isEmpty())
-                return;
-
-            for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
-                if(Player* pPlayer = i->getSource())
-                {
-                    pPlayer->GetSession()->SendNotification("The water started to boil..."); 
-                    pPlayer->GetSession()->SendNotification("...The Lurker Below is waiting...");
-                }
-            //summonare una ventina di pesci oppure scorrere i mob spawnati(e renderli friendly, intargettabili
-            // oppure gestire una pool di pesci			
+        Map::PlayerList const& PlayerList = instance->GetPlayers();
+        if (PlayerList.isEmpty())
+            return;
+        for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
+            if(Player* pPlayer = i->getSource())
+            {
+                pPlayer->GetSession()->SendNotification("The water started to boil...");
+                pPlayer->GetSession()->SendNotification("...The Lurker Below is waiting...");
+            }
+        //summonare una ventina di pesci oppure scorrere i mob spawnati(e renderli friendly, intargettabili
+        // oppure gestire una pool di pesci
     }
-	
+
     //Lurker Event instance Update
     void Update(uint32 diff)
-    { 		
+    {
         if(GetData(TYPE_THELURKER_EVENT) == DONE) // se lurker ucciso, non faccio nulla
             return;
-        if (EventTimer < diff) //lurker platform check      
+        if (EventTimer < diff) //lurker platform check
         {
             if (!m_uiHonorGuardGUID.empty())  //nel caso di mob non spawnati
             {
