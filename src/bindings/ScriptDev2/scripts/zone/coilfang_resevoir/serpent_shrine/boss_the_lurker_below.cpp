@@ -139,30 +139,30 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
         {
              if(m_pInstance->GetData(TYPE_THELURKER_EVENT) == NOT_STARTED) // se boss non killato proseguo
              {
-             Map *pMap = m_creature->GetMap();
-             if (!pMap->IsDungeon())
-                return;
-             Map::PlayerList const &PlayerList = pMap->GetPlayers();
-             if (PlayerList.isEmpty())
-	        return;
-             for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
-             {
-                 if(Player* pPlayer = i->getSource())
-                 {
-                    if (!pPlayer->GetSession() || !pPlayer->isAlive())
-                        continue;
-                    if (!pPlayer->GetDistance(m_creature) < 1.5 && pPlayer->IsInWater()) //swim in center for pop the boss
+                Map *pMap = m_creature->GetMap();
+                if (!pMap->IsDungeon())
+                    return;
+                Map::PlayerList const &PlayerList = pMap->GetPlayers();
+                if (PlayerList.isEmpty())
+	                return;
+                 for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
+                {
+                    if(Player* pPlayer = i->getSource())
                     {
-                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                        m_creature->RemoveFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_SUBMERGED);
-                        //DoScriptText(SAY_EMERGE, m_creature);
-                        DoCast(m_creature, SPELL_EMERGE);
-                        m_creature->setFaction(14);
-                        //InCombat = true;
-                     }
-                 }
-             }
-        }
+                        if (!pPlayer->GetSession() || !pPlayer->isAlive())
+                            continue;
+                        if (!pPlayer->GetDistance(m_creature) < 1.5 && pPlayer->IsInWater()) //swim in center for pop the boss
+                        {
+                            m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                            m_creature->RemoveFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_SUBMERGED);
+                            //DoScriptText(SAY_EMERGE, m_creature);
+                            DoCast(m_creature, SPELL_EMERGE);
+                            m_creature->setFaction(14);
+                            //InCombat = true;
+                        }
+                    }
+                }
+            }
             WaterTimer = 1000;
         } else WaterTimer -= diff;
 
@@ -254,7 +254,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
             if(GeyserTimer < diff)
             {
                 GeyserTimer = rand()%15000 + 10000;
-                if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
+                if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 1))
                     DoCast(pTarget,SPELL_GEYSER);
             }else GeyserTimer -= diff;
 
