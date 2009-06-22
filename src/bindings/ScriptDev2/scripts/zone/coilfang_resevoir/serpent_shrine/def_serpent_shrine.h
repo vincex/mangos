@@ -13,6 +13,7 @@ enum
     TYPE_LEOTHERAS_EVENT            = 4,
     TYPE_MOROGRIM_EVENT             = 5,
     TYPE_THELURKER_EVENT            = 6,
+    TYPE_PLATFORM_EVENT             = 7,
 
     DATA_KARATHRESS_STARTER         = 10,
     DATA_KARATHRESS                 = 11,
