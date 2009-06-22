@@ -1304,7 +1304,6 @@ void Player::setDeathState(DeathState s)
 
         // remove uncontrolled pets
         RemoveMiniPet();
-        RemoveGuardians();
 
         // save value before aura remove in Unit::setDeathState
         ressSpellId = GetUInt32Value(PLAYER_SELF_RES_SPELL);
@@ -1733,7 +1732,6 @@ void Player::RemoveFromWorld()
         Uncharm();
         UnsummonAllTotems();
         RemoveMiniPet();
-        RemoveGuardians();
     }
 
     for(int i = PLAYER_SLOT_START; i < PLAYER_SLOT_END; ++i)
@@ -1995,7 +1993,7 @@ GameObject* Player::GetGameObjectIfCanInteractWith(uint64 guid, GameobjectTypes 
 bool Player::IsUnderWater() const
 {
     return IsInWater() &&
-        GetPositionZ() < (MapManager::Instance().GetBaseMap(GetMapId())->GetWaterLevel(GetPositionX(),GetPositionY())-2);
+        GetPositionZ() < (GetBaseMap()->GetWaterLevel(GetPositionX(),GetPositionY())-2);
 }
 
 void Player::SetInWater(bool apply)
@@ -3065,12 +3063,7 @@ void Player::RemoveSpellCooldown( uint32 spell_id, bool update /* = false */ )
     m_spellCooldowns.erase(spell_id);
 
     if(update)
-    {
-        WorldPacket data(SMSG_CLEAR_COOLDOWN, 4+8);
-        data << uint32(spell_id);
-        data << uint64(GetGUID());
-        SendDirectMessage(&data);
-    }
+        SendClearCooldown(spell_id, this);
 }
 
 void Player::RemoveArenaSpellCooldowns()
@@ -3088,13 +3081,8 @@ void Player::RemoveArenaSpellCooldowns()
             entry->RecoveryTime <= 15 * MINUTE * IN_MILISECONDS &&
             entry->CategoryRecoveryTime <= 15 * MINUTE * IN_MILISECONDS )
         {
-            // notify player
-            WorldPacket data(SMSG_CLEAR_COOLDOWN, 4+8);
-            data << uint32(itr->first);
-            data << uint64(GetGUID());
-            GetSession()->SendPacket(&data);
-            // remove cooldown
-            m_spellCooldowns.erase(itr);
+            // remove & notify
+            RemoveSpellCooldown(itr->first, true);
         }
     }
 }
@@ -3104,12 +3092,8 @@ void Player::RemoveAllSpellCooldown()
     if(!m_spellCooldowns.empty())
     {
         for(SpellCooldowns::const_iterator itr = m_spellCooldowns.begin();itr != m_spellCooldowns.end(); ++itr)
-        {
-            WorldPacket data(SMSG_CLEAR_COOLDOWN, 4+8);
-            data << uint32(itr->first);
-            data << uint64(GetGUID());
-            GetSession()->SendPacket(&data);
-        }
+            SendClearCooldown(itr->first, this);
+
         m_spellCooldowns.clear();
     }
 }
@@ -3211,10 +3195,7 @@ bool Player::resetTalents(bool no_cost)
 {
     // not need after this call
     if(HasAtLoginFlag(AT_LOGIN_RESET_TALENTS))
-    {
-        m_atLoginFlags = m_atLoginFlags & ~AT_LOGIN_RESET_TALENTS;
-        CharacterDatabase.PExecute("UPDATE characters set at_login = at_login & ~ %u WHERE guid ='%u'", uint32(AT_LOGIN_RESET_TALENTS), GetGUIDLow());
-    }
+        RemoveAtLoginFlag(AT_LOGIN_RESET_TALENTS,true);
 
     uint32 level = getLevel();
     uint32 talentPointsForLevel = level < 10 ? 0 : uint32((level-9)*sWorld.getRate(RATE_TALENT));
@@ -5419,7 +5400,7 @@ void Player::CheckExploreSystem()
     if (isInFlight())
         return;
 
-    uint16 areaFlag=MapManager::Instance().GetBaseMap(GetMapId())->GetAreaFlag(GetPositionX(),GetPositionY(),GetPositionZ());
+    uint16 areaFlag = GetBaseMap()->GetAreaFlag(GetPositionX(),GetPositionY(),GetPositionZ());
     if(areaFlag==0xffff)
         return;
     int offset = areaFlag / 32;
@@ -6077,22 +6058,6 @@ void Player::DuelComplete(DuelCompleteType type)
         data << GetName();
         SendMessageToSet(&data,true);
     }
-
-    // cool-down duel spell
-    /*data.Initialize(SMSG_SPELL_COOLDOWN, 17);
-
-    data<<GetGUID();
-    data<<uint8(0x0);
-
-    data<<(uint32)7266;
-    data<<uint32(0x0);
-    GetSession()->SendPacket(&data);
-    data.Initialize(SMSG_SPELL_COOLDOWN, 17);
-    data<<duel->opponent->GetGUID();
-    data<<uint8(0x0);
-    data<<(uint32)7266;
-    data<<uint32(0x0);
-    duel->opponent->GetSession()->SendPacket(&data);*/
 
     //Remove Duel Flag object
     GameObject* obj = GetMap()->GetGameObject(GetUInt64Value(PLAYER_DUEL_ARBITER));
@@ -13459,7 +13424,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
         if(at)
             Relocate(at->target_X, at->target_Y, at->target_Z, at->target_Orientation);
         else
-            sLog.outError("Player %s(GUID: %u) logged in to a reset instance (map: %u) and there is no aretrigger leading to this map. Thus he can't be ported back to the entrance. This _might_ be an exploit attempt.", GetName(), GetGUIDLow(), GetMapId());
+            sLog.outError("Player %s(GUID: %u) logged in to a reset instance (map: %u) and there is no area-trigger leading to this map. Thus he can't be ported back to the entrance. This _might_ be an exploit attempt.", GetName(), GetGUIDLow(), GetMapId());
     }
 
     SaveRecallPosition();
@@ -14735,10 +14700,10 @@ void Player::SaveToDB()
     {
         ss << GetTeleportDest().mapid << ", "
         << (uint32)GetDifficulty() << ", "
-        << finiteAlways(GetTeleportDest().x) << ", "
-        << finiteAlways(GetTeleportDest().y) << ", "
-        << finiteAlways(GetTeleportDest().z) << ", "
-        << finiteAlways(GetTeleportDest().o) << ", '";
+        << finiteAlways(GetTeleportDest().coord_x) << ", "
+        << finiteAlways(GetTeleportDest().coord_y) << ", "
+        << finiteAlways(GetTeleportDest().coord_z) << ", "
+        << finiteAlways(GetTeleportDest().orientation) << ", '";
     }
 
     uint16 i;
@@ -15494,7 +15459,7 @@ void Player::RemovePet(Pet* pet, PetSaveMode mode, bool returnreagent)
             m_miniPet = 0;
             break;
         case GUARDIAN_PET:
-            m_guardianPets.erase(pet->GetGUID());
+            RemoveGuardian(pet);
             break;
         default:
             if(GetPetGUID() == pet->GetGUID())
@@ -15549,32 +15514,6 @@ Pet* Player::GetMiniPet()
     if(!m_miniPet)
         return NULL;
     return ObjectAccessor::GetPet(m_miniPet);
-}
-
-void Player::RemoveGuardians()
-{
-    while(!m_guardianPets.empty())
-    {
-        uint64 guid = *m_guardianPets.begin();
-        if(Pet* pet = ObjectAccessor::GetPet(guid))
-            pet->Remove(PET_SAVE_AS_DELETED);
-
-        m_guardianPets.erase(guid);
-    }
-}
-
-bool Player::HasGuardianWithEntry(uint32 entry)
-{
-    // pet guid middle part is entry (and creature also)
-    // and in guardian list must be guardians with same entry _always_
-    for(GuardianPetList::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end(); ++itr)
-    {
-        if(Pet* pet = ObjectAccessor::GetPet(*itr))
-            if (pet->GetEntry() == entry)
-                return true;
-    }
-
-    return false;
 }
 
 void Player::Uncharm()
@@ -16476,7 +16415,6 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
 
     if (bagguid != NULL_BAG && slot != NULL_SLOT)
     {
-        Bag *pBag;
         if( bagguid == GetGUID() )
         {
             bag = INVENTORY_SLOT_BAG_0;
@@ -16485,8 +16423,7 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
         {
             for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END;++i)
             {
-                pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0,i);
-                if( pBag )
+                if( Bag *pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0,i) )
                 {
                     if( bagguid == pBag->GetGUID() )
                     {
@@ -17391,10 +17328,7 @@ void Player::resetSpells()
 {
     // not need after this call
     if(HasAtLoginFlag(AT_LOGIN_RESET_SPELLS))
-    {
-        m_atLoginFlags = m_atLoginFlags & ~AT_LOGIN_RESET_SPELLS;
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login & ~ %u WHERE guid ='%u'", uint32(AT_LOGIN_RESET_SPELLS), GetGUIDLow());
-    }
+        RemoveAtLoginFlag(AT_LOGIN_RESET_SPELLS,true);
 
     // make full copy of map (spells removed and marked as deleted at another spell remove
     // and we can't use original map for safe iterative with visit each spell at loop end
@@ -18648,4 +18582,20 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
 
     // update free talent points
     SetFreeTalentPoints(CurTalentPoints - (talentRank - curtalent_maxrank + 1));
+}
+
+void Player::SendClearCooldown( uint32 spell_id, Unit* target )
+{
+    WorldPacket data(SMSG_CLEAR_COOLDOWN, 4+8);
+    data << uint32(spell_id);
+    data << uint64(target->GetGUID());
+    SendDirectMessage(&data);
+}
+
+void Player::RemoveAtLoginFlag( AtLoginFlags f, bool in_db_also /*= false*/ )
+{
+    m_atLoginFlags &= ~f;
+
+    if(in_db_also)
+        CharacterDatabase.PExecute("UPDATE characters set at_login = at_login & ~ %u WHERE guid ='%u'", uint32(f), GetGUIDLow());
 }

@@ -195,14 +195,14 @@ enum SheathState
 // byte (1 from 0..3) of UNIT_FIELD_BYTES_2
 enum UnitBytes2_Flags
 {
-    UNIT_BYTE2_FLAG_UNK0  = 0x01,
-    UNIT_BYTE2_FLAG_UNK1  = 0x02,
-    UNIT_BYTE2_FLAG_UNK2  = 0x04,
-    UNIT_BYTE2_FLAG_UNK3  = 0x08,
-    UNIT_BYTE2_FLAG_AURAS = 0x10,                           // show possitive auras as positive, and allow its dispel
-    UNIT_BYTE2_FLAG_UNK5  = 0x20,
-    UNIT_BYTE2_FLAG_UNK6  = 0x40,
-    UNIT_BYTE2_FLAG_UNK7  = 0x80
+    UNIT_BYTE2_FLAG_UNK0        = 0x01,
+    UNIT_BYTE2_FLAG_UNK1        = 0x02,
+    UNIT_BYTE2_FLAG_UNK2        = 0x04,
+    UNIT_BYTE2_FLAG_UNK3        = 0x08,
+    UNIT_BYTE2_FLAG_AURAS       = 0x10,                     // show possitive auras as positive, and allow its dispel
+    UNIT_BYTE2_FLAG_UNK5        = 0x20,
+    UNIT_BYTE2_FLAG_UNK6        = 0x40,
+    UNIT_BYTE2_FLAG_UNK7        = 0x80
 };
 
 // byte (2 from 0..3) of UNIT_FIELD_BYTES_2
@@ -840,6 +840,8 @@ enum ReactiveType
 #define MAX_REACTIVE 6
 #define MAX_TOTEM 4
 
+typedef std::set<uint64> GuardianPetList;
+
 // delay time next attack to prevent client attack animation problems
 #define ATTACK_DISPLAY_DELAY 200
 
@@ -1166,6 +1168,11 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void SetPet(Pet* pet);
         void SetCharm(Unit* pet);
 
+        void AddGuardian(Pet* pet);
+        void RemoveGuardian(Pet* pet);
+        void RemoveGuardians();
+        Pet* FindGuardianWithEntry(uint32 entry);
+
         bool isCharmed() const { return GetCharmerGUID() != 0; }
 
         CharmInfo* GetCharmInfo() { return m_charmInfo; }
@@ -1441,8 +1448,6 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void SendPetCastFail(uint32 spellid, SpellCastResult msg);
         void SendPetActionFeedback (uint8 msg);
         void SendPetTalk (uint32 pettalk);
-        void SendPetSpellCooldown (uint32 spellid, time_t cooltime);
-        void SendPetClearCooldown (uint32 spellid);
         void SendPetAIReaction(uint64 guid);
         ///----------End of Pet responses methods----------
 
@@ -1533,5 +1538,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         FollowerRefManager m_FollowingRefManager;
 
         ComboPointHolderSet m_ComboPointHolders;
+
+        GuardianPetList m_guardianPets;
 };
 #endif

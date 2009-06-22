@@ -3969,12 +3969,12 @@ bool Unit::isInAccessablePlaceFor(Creature const* c) const
 
 bool Unit::IsInWater() const
 {
-    return MapManager::Instance().GetBaseMap(GetMapId())->IsInWater(GetPositionX(),GetPositionY(), GetPositionZ());
+    return GetBaseMap()->IsInWater(GetPositionX(),GetPositionY(), GetPositionZ());
 }
 
 bool Unit::IsUnderWater() const
 {
-    return MapManager::Instance().GetBaseMap(GetMapId())->IsUnderWater(GetPositionX(),GetPositionY(),GetPositionZ());
+    return GetBaseMap()->IsUnderWater(GetPositionX(),GetPositionY(),GetPositionZ());
 }
 
 void Unit::DeMorph()
@@ -8397,13 +8397,10 @@ void Unit::CombatStopWithPets(bool includingCast)
         pet->CombatStop(includingCast);
     if(Unit* charm = GetCharm())
         charm->CombatStop(includingCast);
-    if(GetTypeId()==TYPEID_PLAYER)
-    {
-        GuardianPetList const& guardians = ((Player*)this)->GetGuardians();
-        for(GuardianPetList::const_iterator itr = guardians.begin(); itr != guardians.end(); ++itr)
-            if(Unit* guardian = Unit::GetUnit(*this,*itr))
-                guardian->CombatStop(includingCast);
-    }
+
+    for(GuardianPetList::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end(); ++itr)
+        if(Unit* guardian = Unit::GetUnit(*this,*itr))
+            guardian->CombatStop(includingCast);
 }
 
 bool Unit::isAttackingPlayer() const
@@ -8568,6 +8565,44 @@ void Unit::SetPet(Pet* pet)
 void Unit::SetCharm(Unit* pet)
 {
     SetUInt64Value(UNIT_FIELD_CHARM, pet ? pet->GetGUID() : 0);
+}
+
+
+void Unit::AddGuardian( Pet* pet )
+{
+    m_guardianPets.insert(pet->GetGUID());
+}
+
+
+void Unit::RemoveGuardian( Pet* pet )
+{
+    m_guardianPets.erase(pet->GetGUID());
+}
+
+void Unit::RemoveGuardians()
+{
+    while(!m_guardianPets.empty())
+    {
+        uint64 guid = *m_guardianPets.begin();
+        if(Pet* pet = ObjectAccessor::GetPet(guid))
+            pet->Remove(PET_SAVE_AS_DELETED);
+
+        m_guardianPets.erase(guid);
+    }
+}
+
+Pet* Unit::FindGuardianWithEntry(uint32 entry)
+{
+    // pet guid middle part is entry (and creature also)
+    // and in guardian list must be guardians with same entry _always_
+    for(GuardianPetList::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end(); ++itr)
+    {
+        if(Pet* pet = ObjectAccessor::GetPet(*itr))
+            if (pet->GetEntry() == entry)
+                return pet;
+    }
+
+    return NULL;
 }
 
 void Unit::UnsummonAllTotems()
@@ -10442,6 +10477,7 @@ void Unit::setDeathState(DeathState s)
     if (s == JUST_DIED)
     {
         RemoveAllAurasOnDeath();
+        RemoveGuardians();
         UnsummonAllTotems();
 
         ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, false);
@@ -11287,6 +11323,7 @@ void Unit::RemoveFromWorld()
     if(IsInWorld())
     {
         RemoveNotOwnSingleTargetAuras();
+        RemoveGuardians();
     }
 
     Object::RemoveFromWorld();
@@ -12131,33 +12168,6 @@ void Unit::SendPetTalk (uint32 pettalk)
     WorldPacket data(SMSG_PET_ACTION_SOUND, 8 + 4);
     data << uint64(GetGUID());
     data << uint32(pettalk);
-    ((Player*)owner)->GetSession()->SendPacket(&data);
-}
-
-void Unit::SendPetSpellCooldown (uint32 spellid, time_t cooltime)
-{
-    Unit* owner = GetOwner();
-    if(!owner || owner->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    WorldPacket data(SMSG_SPELL_COOLDOWN, 8+1+4+4);
-    data << uint64(GetGUID());
-    data << uint8(0x0);                                     // flags (0x1, 0x2)
-    data << uint32(spellid);
-    data << uint32(cooltime);
-
-    ((Player*)owner)->GetSession()->SendPacket(&data);
-}
-
-void Unit::SendPetClearCooldown (uint32 spellid)
-{
-    Unit* owner = GetOwner();
-    if(!owner || owner->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    WorldPacket data(SMSG_CLEAR_COOLDOWN, 4+8);
-    data << uint32(spellid);
-    data << uint64(GetGUID());
     ((Player*)owner)->GetSession()->SendPacket(&data);
 }
 
