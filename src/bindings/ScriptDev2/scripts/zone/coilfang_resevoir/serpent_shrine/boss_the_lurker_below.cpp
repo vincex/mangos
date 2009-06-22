@@ -254,7 +254,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
             if(GeyserTimer < diff)
             {
                 GeyserTimer = rand()%15000 + 10000;
-                if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 1))
+                if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
                     DoCast(pTarget,SPELL_GEYSER);
             }else GeyserTimer -= diff;
 
