@@ -731,6 +731,9 @@ bool ItemUse_item_tainted_core(Player* pPlayer, Item* pItem, SpellCastTargets co
 
             //remove this item
             pPlayer->DestroyItemCount(31088, 1, true);
+			
+            if(pInstance->GetData(TYPE_VASHJ_PHASE3_CHECK)!=DONE)
+                 pVashj->CastSpell(pVashj, SPELL_MAGIC_BARRIER, false);
         }
     }
     return true;
