@@ -224,7 +224,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
                     {
                         SpoutTimer = 45000;
                         OrientationUpdated = -1;
-                        WhirlTimer = 5000;
+                        WhirlTimer = 2000;
                         if(Unit *pVictim = m_creature->getVictim())
                             m_creature->SetUInt64Value(UNIT_FIELD_TARGET, pVictim->GetGUID());
                     }

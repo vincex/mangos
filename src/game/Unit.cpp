@@ -9408,7 +9408,10 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
         Unit::AuraList const& auraDummy = pVictim->GetAurasByType(SPELL_AURA_DUMMY);
         for(Unit::AuraList::const_iterator itr = auraDummy.begin(); itr!=auraDummy.end(); ++itr)
             if((*itr)->GetId() == 29203)
-                pctMod += (*itr)->GetModifier()->m_amount;
+                {
+                  pctMod += (*itr)->GetModifier()->m_amount * (*itr)->GetStackAmount();
+                  break;
+                }
         // Apply bonus
         if (pctMod)
             heal = heal * (100 + pctMod) / 100;

@@ -94,7 +94,7 @@ struct MANGOS_DLL_DECL boss_hydross_the_unstableAI : public ScriptedAI
 
     void Reset()
     {
-        m_uiPosCheck_Timer          = 2500;
+        m_uiPosCheck_Timer          = 6500;
         m_uiMarkOfHydross_Timer     = 15000;
         m_uiMarkOfCorruption_Timer  = 15000;
         m_uiWaterTomb_Timer         = 7000;
@@ -225,7 +225,7 @@ struct MANGOS_DLL_DECL boss_hydross_the_unstableAI : public ScriptedAI
                     m_bCorruptedForm = false;
                 }
 
-                m_uiPosCheck_Timer = 2500;
+                m_uiPosCheck_Timer = 6500;
             }else m_uiPosCheck_Timer -=uiDiff;
         }
         // clean form
@@ -291,7 +291,7 @@ struct MANGOS_DLL_DECL boss_hydross_the_unstableAI : public ScriptedAI
                     m_bCorruptedForm = true;
                 }
 
-                m_uiPosCheck_Timer = 2500;
+                m_uiPosCheck_Timer = 6500;
             }else m_uiPosCheck_Timer -=uiDiff;
         }
 
