@@ -195,7 +195,7 @@ struct MANGOS_DLL_DECL boss_dorotheeAI : public ScriptedAI
             else SummonTitoTimer -= diff;
         }
 
-        DoMeleeAttackIfReady();
+        //DoMeleeAttackIfReady();
     }
 };
 
