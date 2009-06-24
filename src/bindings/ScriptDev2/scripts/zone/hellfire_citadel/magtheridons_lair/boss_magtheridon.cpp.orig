@@ -115,6 +115,13 @@ struct MANGOS_DLL_DECL mob_abyssalAI : public ScriptedAI
             m_creature->SetVisibility(VISIBILITY_OFF);
             Despawn_Timer = 130000;
         }
+
+        if (spell->Id == SPELL_SOUL_TRANSFER)
+        {
+                debug_log("Magtheridon(abyssal), Soul Transfer Rimossa");
+                m_creature->RemoveAurasDueToSpell(SPELL_SOUL_TRANSFER);
+        }
+
     }
 
     void SetTrigger(uint32 _trigger)
@@ -331,6 +338,13 @@ struct MANGOS_DLL_DECL boss_magtheridonAI : public ScriptedAI
             m_creature->CastSpell(m_creature,SPELL_SHADOW_CAGE_C,false);
             m_creature->addUnitState(UNIT_STAT_STUNNED);
         }
+
+	if (spell->Id == SPELL_SOUL_TRANSFER)
+	{
+		debug_log("Magtheridon, Soul Transfer Rimossa");
+	   	m_creature->RemoveAurasDueToSpell(SPELL_SOUL_TRANSFER);
+	}
+
     }
 
     void KilledUnit(Unit* victim)
