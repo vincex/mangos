@@ -232,7 +232,7 @@ struct MANGOS_DLL_DECL boss_high_astromancer_solarianAI : public ScriptedAI
 				{
 					if (pTarget->GetTypeId() == TYPEID_PLAYER)
 					{
-						DoCast(pTarget, SPELL_WRATH_OF_THE_ASTROMANCER);
+						DoCast(pTarget, SPELL_MARK_OF_THE_ASTROMANCER);
 						m_uiWrathOfTheAstromancer_Timer = 25000;
 					}
 					else
