@@ -577,6 +577,21 @@ struct MANGOS_DLL_DECL boss_krosh_firehandAI : public ScriptedAI
             m_pInstance->SetData(DATA_MAULGAREVENT, 0);
     }
 
+    void AttackStart(Unit* pWho)
+    {
+        if (!pWho)
+            return;
+
+        if (m_creature->Attack(pWho, true))
+        {
+            m_creature->AddThreat(pWho, 0.0f);
+            m_creature->SetInCombatWith(pWho);
+            pWho->SetInCombatWith(m_creature);
+
+            m_creature->GetMotionMaster()->MoveChase(pWho, 30.0f);
+        }
+    }
+
     void Aggro(Unit *who)
     {
         if (m_pInstance)
