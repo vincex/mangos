@@ -118,7 +118,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
 
     void Aggro(Unit *who)
     {
-        DoZoneInCombat();
+         SetInCombatWithZone();
         //InCombat = true;
 
         //DoScriptText(SAY_AGGRO, m_creature);
