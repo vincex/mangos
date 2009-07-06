@@ -617,21 +617,8 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
     learnDefaultSpells(true);
 
     // original action bar
-    std::list<uint16>::const_iterator action_itr[4];
-    for(int i=0; i<4; ++i)
-        action_itr[i] = info->action[i].begin();
-
-    for (; action_itr[0]!=info->action[0].end() && action_itr[1]!=info->action[1].end();)
-    {
-        uint16 taction[4];
-        for(int i=0; i<4 ;++i)
-            taction[i] = (*action_itr[i]);
-
-        addActionButton((uint8)taction[0], taction[1], (uint8)taction[2], (uint8)taction[3]);
-
-        for(int i=0; i<4 ;++i)
-            ++action_itr[i];
-    }
+    for (PlayerCreateInfoActions::const_iterator action_itr = info->action.begin(); action_itr != info->action.end(); ++action_itr)
+        addActionButton(action_itr->button,action_itr->action,action_itr->type);
 
     // original items
     CharStartOutfitEntry const* oEntry = NULL;
@@ -3067,6 +3054,22 @@ void Player::RemoveSpellCooldown( uint32 spell_id, bool update /* = false */ )
         SendClearCooldown(spell_id, this);
 }
 
+void Player::RemoveSpellCategoryCooldown(uint32 cat, bool update /* = false */)
+{
+    SpellCategoryStore::const_iterator ct = sSpellCategoryStore.find(cat);
+    if (ct == sSpellCategoryStore.end())
+        return;
+
+    const SpellCategorySet& ct_set = ct->second;
+    for (SpellCooldowns::const_iterator i = m_spellCooldowns.begin(); i != m_spellCooldowns.end();)
+    {
+        if (ct_set.find(i->first) != ct_set.end())
+            RemoveSpellCooldown((i++)->first, update);
+        else
+            ++i;
+    }
+}
+
 void Player::RemoveArenaSpellCooldowns()
 {
     // remove cooldowns on spells that has < 15 min CD
@@ -5215,60 +5218,64 @@ void Player::SendInitialActionButtons() const
     {
         ActionButtonList::const_iterator itr = m_actionButtons.find(button);
         if(itr != m_actionButtons.end() && itr->second.uState != ACTIONBUTTON_DELETED)
-        {
-            data << uint16(itr->second.action);
-            data << uint8(itr->second.misc);
-            data << uint8(itr->second.type);
-        }
+            data << uint32(itr->second.packedData);
         else
-        {
             data << uint32(0);
-        }
     }
 
     GetSession()->SendPacket( &data );
     sLog.outDetail( "Action Buttons for '%u' Initialized", GetGUIDLow() );
 }
 
-bool Player::addActionButton(const uint8 button, const uint16 action, const uint8 type, const uint8 misc)
+ActionButton* Player::addActionButton(uint8 button, uint32 action, uint8 type)
 {
     if(button >= MAX_ACTION_BUTTONS)
     {
         sLog.outError( "Action %u not added into button %u for player %s: button must be < 132", action, button, GetName() );
-        return false;
+        return NULL;
     }
 
-    // check cheating with adding non-known spells to action bar
-    if(type==ACTION_BUTTON_SPELL)
+    if(action >= MAX_ACTION_BUTTON_ACTION_VALUE)
     {
-        if(!sSpellStore.LookupEntry(action))
-        {
-            sLog.outError( "Action %u not added into button %u for player %s: spell not exist", action, button, GetName() );
-            return false;
-        }
-
-        if(!HasSpell(action))
-        {
-            sLog.outError( "Action %u not added into button %u for player %s: player don't known this spell", action, button, GetName() );
-            return false;
-        }
+        sLog.outError( "Action %u not added into button %u for player %s: action must be < %u", action, button, GetName(), MAX_ACTION_BUTTON_ACTION_VALUE );
+        return NULL;
     }
 
-    ActionButtonList::iterator buttonItr = m_actionButtons.find(button);
+    switch(type)
+    {
+        case ACTION_BUTTON_SPELL:
+            if(!sSpellStore.LookupEntry(action))
+            {
+                sLog.outError( "Action %u not added into button %u for player %s: spell not exist", action, button, GetName() );
+                return NULL;
+            }
 
-    if (buttonItr==m_actionButtons.end())
-    {                                                       // just add new button
-        m_actionButtons[button] = ActionButton(action,type,misc);
+            if(!HasSpell(action))
+            {
+                sLog.outError( "Action %u not added into button %u for player %s: player don't known this spell", action, button, GetName() );
+                return NULL;
+            }
+            break;
+        case ACTION_BUTTON_ITEM:
+            if(!objmgr.GetItemPrototype(action))
+            {
+                sLog.outError( "Action %u not added into button %u for player %s: item not exist", action, button, GetName() );
+                return NULL;
+            }
+            break;
+        default:
+            break;                                          // pther cases not checked at this moment
     }
-    else
-    {                                                       // change state of current button
-        ActionButtonUpdateState uState = buttonItr->second.uState;
-        buttonItr->second = ActionButton(action,type,misc);
-        if (uState != ACTIONBUTTON_NEW) buttonItr->second.uState = ACTIONBUTTON_CHANGED;
-    };
 
-    sLog.outDetail( "Player '%u' Added Action '%u' to Button '%u'", GetGUIDLow(), action, button );
-    return true;
+
+    // it create new button (NEW state) if need or return existed 
+    ActionButton& ab = m_actionButtons[button];
+
+    // set data and update to CHANGED if not NEW
+    ab.SetActionAndType(action,ActionButtonType(type));
+
+    sLog.outDetail( "Player '%u' Added Action '%u' (type %u) to Button '%u'", GetGUIDLow(), action, uint32(type), button );
+    return &ab;
 }
 
 void Player::removeActionButton(uint8 button)
@@ -8251,35 +8258,38 @@ uint8 Player::_CanStoreItem_InSpecificSlot( uint8 bag, uint8 slot, ItemPosCountV
     Item* pItem2 = GetItemByPos( bag, slot );
 
     // ignore move item (this slot will be empty at move)
-    if(pItem2==pSrcItem)
+    if (pItem2==pSrcItem)
         pItem2 = NULL;
 
     uint32 need_space;
 
     // empty specific slot - check item fit to slot
-    if( !pItem2 || swap )
+    if (!pItem2 || swap)
     {
-        if( bag == INVENTORY_SLOT_BAG_0 )
+        if (bag == INVENTORY_SLOT_BAG_0)
         {
             // keyring case
-            if(slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_START+GetMaxKeyringSize() && !(pProto->BagFamily & BAG_FAMILY_MASK_KEYS))
+            if (slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_START+GetMaxKeyringSize() && !(pProto->BagFamily & BAG_FAMILY_MASK_KEYS))
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
             // prevent cheating
-            if(slot >= BUYBACK_SLOT_START && slot < BUYBACK_SLOT_END || slot >= PLAYER_SLOT_END)
+            if (slot >= BUYBACK_SLOT_START && slot < BUYBACK_SLOT_END || slot >= PLAYER_SLOT_END)
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
         }
         else
         {
             Bag* pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, bag );
-            if( !pBag )
+            if (!pBag)
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
             ItemPrototype const* pBagProto = pBag->GetProto();
-            if( !pBagProto )
+            if (!pBagProto)
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
-            if( !ItemCanGoIntoBag(pProto,pBagProto) )
+            if (slot >= pBagProto->ContainerSlots)
+                return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
+
+            if (!ItemCanGoIntoBag(pProto,pBagProto))
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
         }
 
@@ -8290,21 +8300,21 @@ uint8 Player::_CanStoreItem_InSpecificSlot( uint8 bag, uint8 slot, ItemPosCountV
     else
     {
         // check item type
-        if(pItem2->GetEntry() != pProto->ItemId)
+        if (pItem2->GetEntry() != pProto->ItemId)
             return EQUIP_ERR_ITEM_CANT_STACK;
 
         // check free space
-        if(pItem2->GetCount() >= pProto->Stackable)
+        if (pItem2->GetCount() >= pProto->GetMaxStackSize())
             return EQUIP_ERR_ITEM_CANT_STACK;
 
         need_space = pProto->Stackable - pItem2->GetCount();
     }
 
-    if(need_space > count)
+    if (need_space > count)
         need_space = count;
 
     ItemPosCount newPosition = ItemPosCount((bag << 8) | slot, need_space);
-    if(!newPosition.isContainedIn(dest))
+    if (!newPosition.isContainedIn(dest))
     {
         dest.push_back(newPosition);
         count -= need_space;
@@ -8315,72 +8325,72 @@ uint8 Player::_CanStoreItem_InSpecificSlot( uint8 bag, uint8 slot, ItemPosCountV
 uint8 Player::_CanStoreItem_InBag( uint8 bag, ItemPosCountVec &dest, ItemPrototype const *pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot ) const
 {
     // skip specific bag already processed in first called _CanStoreItem_InBag
-    if(bag==skip_bag)
+    if (bag==skip_bag)
         return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
     Bag* pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, bag );
-    if( !pBag )
+    if (!pBag)
         return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
     ItemPrototype const* pBagProto = pBag->GetProto();
-    if( !pBagProto )
+    if (!pBagProto)
         return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
     // specialized bag mode or non-specilized
-    if( non_specialized != (pBagProto->Class == ITEM_CLASS_CONTAINER && pBagProto->SubClass == ITEM_SUBCLASS_CONTAINER) )
+    if (non_specialized != (pBagProto->Class == ITEM_CLASS_CONTAINER && pBagProto->SubClass == ITEM_SUBCLASS_CONTAINER))
         return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
-    if( !ItemCanGoIntoBag(pProto,pBagProto) )
+    if (!ItemCanGoIntoBag(pProto,pBagProto))
         return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
     for(uint32 j = 0; j < pBag->GetBagSize(); ++j)
     {
         // skip specific slot already processed in first called _CanStoreItem_InSpecificSlot
-        if(j==skip_slot)
+        if (j==skip_slot)
             continue;
 
         Item* pItem2 = GetItemByPos( bag, j );
 
         // ignore move item (this slot will be empty at move)
-        if(pItem2==pSrcItem)
+        if (pItem2==pSrcItem)
             pItem2 = NULL;
 
         // if merge skip empty, if !merge skip non-empty
-        if((pItem2!=NULL)!=merge)
+        if ((pItem2!=NULL)!=merge)
             continue;
 
-        if( pItem2 )
+        if (pItem2)
         {
-            if(pItem2->GetEntry() == pProto->ItemId && pItem2->GetCount() < pProto->Stackable )
+            if (pItem2->GetEntry() == pProto->ItemId && pItem2->GetCount() < pProto->GetMaxStackSize())
             {
                 uint32 need_space = pProto->Stackable - pItem2->GetCount();
                 if(need_space > count)
                     need_space = count;
 
                 ItemPosCount newPosition = ItemPosCount((bag << 8) | j, need_space);
-                if(!newPosition.isContainedIn(dest))
+                if (!newPosition.isContainedIn(dest))
                 {
                     dest.push_back(newPosition);
                     count -= need_space;
 
-                    if(count==0)
+                    if (count==0)
                         return EQUIP_ERR_OK;
                 }
             }
         }
         else
         {
-            uint32 need_space = pProto->Stackable;
-            if(need_space > count)
+            uint32 need_space = pProto->GetMaxStackSize();
+            if (need_space > count)
                 need_space = count;
 
             ItemPosCount newPosition = ItemPosCount((bag << 8) | j, need_space);
-            if(!newPosition.isContainedIn(dest))
+            if (!newPosition.isContainedIn(dest))
             {
                 dest.push_back(newPosition);
                 count -= need_space;
 
-                if(count==0)
+                if (count==0)
                     return EQUIP_ERR_OK;
             }
         }
@@ -8393,50 +8403,50 @@ uint8 Player::_CanStoreItem_InInventorySlots( uint8 slot_begin, uint8 slot_end, 
     for(uint32 j = slot_begin; j < slot_end; ++j)
     {
         // skip specific slot already processed in first called _CanStoreItem_InSpecificSlot
-        if(INVENTORY_SLOT_BAG_0==skip_bag && j==skip_slot)
+        if (INVENTORY_SLOT_BAG_0==skip_bag && j==skip_slot)
             continue;
 
         Item* pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, j );
 
         // ignore move item (this slot will be empty at move)
-        if(pItem2==pSrcItem)
+        if (pItem2==pSrcItem)
             pItem2 = NULL;
 
         // if merge skip empty, if !merge skip non-empty
-        if((pItem2!=NULL)!=merge)
+        if ((pItem2!=NULL)!=merge)
             continue;
 
-        if( pItem2 )
+        if (pItem2)
         {
-            if(pItem2->GetEntry() == pProto->ItemId && pItem2->GetCount() < pProto->Stackable )
+            if (pItem2->GetEntry() == pProto->ItemId && pItem2->GetCount() < pProto->GetMaxStackSize())
             {
-                uint32 need_space = pProto->Stackable - pItem2->GetCount();
-                if(need_space > count)
+                uint32 need_space = pProto->GetMaxStackSize() - pItem2->GetCount();
+                if (need_space > count)
                     need_space = count;
                 ItemPosCount newPosition = ItemPosCount((INVENTORY_SLOT_BAG_0 << 8) | j, need_space);
-                if(!newPosition.isContainedIn(dest))
+                if (!newPosition.isContainedIn(dest))
                 {
                     dest.push_back(newPosition);
                     count -= need_space;
 
-                    if(count==0)
+                    if (count==0)
                         return EQUIP_ERR_OK;
                 }
             }
         }
         else
         {
-            uint32 need_space = pProto->Stackable;
-            if(need_space > count)
+            uint32 need_space = pProto->GetMaxStackSize();
+            if (need_space > count)
                 need_space = count;
 
             ItemPosCount newPosition = ItemPosCount((INVENTORY_SLOT_BAG_0 << 8) | j, need_space);
-            if(!newPosition.isContainedIn(dest))
+            if (!newPosition.isContainedIn(dest))
             {
                 dest.push_back(newPosition);
                 count -= need_space;
 
-                if(count==0)
+                if (count==0)
                     return EQUIP_ERR_OK;
             }
         }
@@ -8449,16 +8459,16 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
     sLog.outDebug( "STORAGE: CanStoreItem bag = %u, slot = %u, item = %u, count = %u", bag, slot, entry, count);
 
     ItemPrototype const *pProto = objmgr.GetItemPrototype(entry);
-    if( !pProto )
+    if (!pProto)
     {
-        if(no_space_count)
+        if (no_space_count)
             *no_space_count = count;
         return swap ? EQUIP_ERR_ITEMS_CANT_BE_SWAPPED :EQUIP_ERR_ITEM_NOT_FOUND;
     }
 
-    if(pItem && pItem->IsBindedNotWith(this))
+    if (pItem && pItem->IsBindedNotWith(this))
     {
-        if(no_space_count)
+        if (no_space_count)
             *no_space_count = count;
         return EQUIP_ERR_DONT_OWN_THAT_ITEM;
     }
@@ -8466,11 +8476,11 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
     // check count of items (skip for auto move for same player from bank)
     uint32 no_similar_count = 0;                            // can't store this amount similar items
     uint8 res = _CanTakeMoreSimilarItems(entry,count,pItem,&no_similar_count);
-    if(res!=EQUIP_ERR_OK)
+    if (res!=EQUIP_ERR_OK)
     {
-        if(count==no_similar_count)
+        if (count==no_similar_count)
         {
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = no_similar_count;
             return res;
         }
@@ -8478,22 +8488,22 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
     }
 
     // in specific slot
-    if( bag != NULL_BAG && slot != NULL_SLOT )
+    if (bag != NULL_BAG && slot != NULL_SLOT)
     {
         res = _CanStoreItem_InSpecificSlot(bag,slot,dest,pProto,count,swap,pItem);
-        if(res!=EQUIP_ERR_OK)
+        if (res!=EQUIP_ERR_OK)
         {
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = count + no_similar_count;
             return res;
         }
 
-        if(count==0)
+        if (count==0)
         {
-            if(no_similar_count==0)
+            if (no_similar_count==0)
                 return EQUIP_ERR_OK;
 
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = count + no_similar_count;
             return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
         }
@@ -8502,45 +8512,45 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
     // not specific slot or have space for partly store only in specific slot
 
     // in specific bag
-    if( bag != NULL_BAG )
+    if (bag != NULL_BAG)
     {
         // search stack in bag for merge to
         if( pProto->Stackable > 1 )
         {
-            if( bag == INVENTORY_SLOT_BAG_0 )               // inventory
+            if (bag == INVENTORY_SLOT_BAG_0)               // inventory
             {
                 res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START,KEYRING_SLOT_END,dest,pProto,count,true,pItem,bag,slot);
-                if(res!=EQUIP_ERR_OK)
+                if (res!=EQUIP_ERR_OK)
                 {
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return res;
                 }
 
-                if(count==0)
+                if (count==0)
                 {
-                    if(no_similar_count==0)
+                    if (no_similar_count==0)
                         return EQUIP_ERR_OK;
 
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
 
                 res = _CanStoreItem_InInventorySlots(INVENTORY_SLOT_ITEM_START,INVENTORY_SLOT_ITEM_END,dest,pProto,count,true,pItem,bag,slot);
-                if(res!=EQUIP_ERR_OK)
+                if (res!=EQUIP_ERR_OK)
                 {
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return res;
                 }
 
-                if(count==0)
+                if (count==0)
                 {
-                    if(no_similar_count==0)
+                    if (no_similar_count==0)
                         return EQUIP_ERR_OK;
 
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
@@ -8549,22 +8559,22 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
             {
                 // we need check 2 time (specialized/non_specialized), use NULL_BAG to prevent skipping bag
                 res = _CanStoreItem_InBag(bag,dest,pProto,count,true,false,pItem,NULL_BAG,slot);
-                if(res!=EQUIP_ERR_OK)
+                if (res!=EQUIP_ERR_OK)
                     res = _CanStoreItem_InBag(bag,dest,pProto,count,true,true,pItem,NULL_BAG,slot);
 
-                if(res!=EQUIP_ERR_OK)
+                if (res!=EQUIP_ERR_OK)
                 {
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return res;
                 }
 
-                if(count==0)
+                if (count==0)
                 {
-                    if(no_similar_count==0)
+                    if (no_similar_count==0)
                         return EQUIP_ERR_OK;
 
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
@@ -8572,45 +8582,45 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
         }
 
         // search free slot in bag for place to
-        if( bag == INVENTORY_SLOT_BAG_0 )                   // inventory
+        if(bag == INVENTORY_SLOT_BAG_0)                     // inventory
         {
             // search free slot - keyring case
-            if(pProto->BagFamily & BAG_FAMILY_MASK_KEYS)
+            if (pProto->BagFamily & BAG_FAMILY_MASK_KEYS)
             {
                 uint32 keyringSize = GetMaxKeyringSize();
                 res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START,KEYRING_SLOT_START+keyringSize,dest,pProto,count,false,pItem,bag,slot);
-                if(res!=EQUIP_ERR_OK)
+                if (res!=EQUIP_ERR_OK)
                 {
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return res;
                 }
 
-                if(count==0)
+                if (count==0)
                 {
-                    if(no_similar_count==0)
+                    if (no_similar_count==0)
                         return EQUIP_ERR_OK;
 
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
             }
 
             res = _CanStoreItem_InInventorySlots(INVENTORY_SLOT_ITEM_START,INVENTORY_SLOT_ITEM_END,dest,pProto,count,false,pItem,bag,slot);
-            if(res!=EQUIP_ERR_OK)
+            if (res!=EQUIP_ERR_OK)
             {
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return res;
             }
 
-            if(count==0)
+            if (count==0)
             {
-                if(no_similar_count==0)
+                if (no_similar_count==0)
                     return EQUIP_ERR_OK;
 
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
@@ -8618,22 +8628,22 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
         else                                                // equipped bag
         {
             res = _CanStoreItem_InBag(bag,dest,pProto,count,false,false,pItem,NULL_BAG,slot);
-            if(res!=EQUIP_ERR_OK)
+            if (res!=EQUIP_ERR_OK)
                 res = _CanStoreItem_InBag(bag,dest,pProto,count,false,true,pItem,NULL_BAG,slot);
 
-            if(res!=EQUIP_ERR_OK)
+            if (res!=EQUIP_ERR_OK)
             {
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return res;
             }
 
-            if(count==0)
+            if (count==0)
             {
-                if(no_similar_count==0)
+                if (no_similar_count==0)
                     return EQUIP_ERR_OK;
 
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
@@ -8646,55 +8656,55 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
     if( pProto->Stackable > 1 )
     {
         res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START,KEYRING_SLOT_END,dest,pProto,count,true,pItem,bag,slot);
-        if(res!=EQUIP_ERR_OK)
+        if (res!=EQUIP_ERR_OK)
         {
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = count + no_similar_count;
             return res;
         }
 
-        if(count==0)
+        if (count==0)
         {
-            if(no_similar_count==0)
+            if (no_similar_count==0)
                 return EQUIP_ERR_OK;
 
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = count + no_similar_count;
             return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
         }
 
         res = _CanStoreItem_InInventorySlots(INVENTORY_SLOT_ITEM_START,INVENTORY_SLOT_ITEM_END,dest,pProto,count,true,pItem,bag,slot);
-        if(res!=EQUIP_ERR_OK)
+        if (res!=EQUIP_ERR_OK)
         {
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = count + no_similar_count;
             return res;
         }
 
-        if(count==0)
+        if (count==0)
         {
-            if(no_similar_count==0)
+            if (no_similar_count==0)
                 return EQUIP_ERR_OK;
 
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = count + no_similar_count;
             return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
         }
 
-        if( pProto->BagFamily )
+        if (pProto->BagFamily)
         {
             for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
             {
                 res = _CanStoreItem_InBag(i,dest,pProto,count,true,false,pItem,bag,slot);
-                if(res!=EQUIP_ERR_OK)
+                if (res!=EQUIP_ERR_OK)
                     continue;
 
-                if(count==0)
+                if (count==0)
                 {
-                    if(no_similar_count==0)
+                    if (no_similar_count==0)
                         return EQUIP_ERR_OK;
 
-                    if(no_space_count)
+                    if (no_space_count)
                         *no_space_count = count + no_similar_count;
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
@@ -8704,15 +8714,15 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
         for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
         {
             res = _CanStoreItem_InBag(i,dest,pProto,count,true,true,pItem,bag,slot);
-            if(res!=EQUIP_ERR_OK)
+            if (res!=EQUIP_ERR_OK)
                 continue;
 
-            if(count==0)
+            if (count==0)
             {
-                if(no_similar_count==0)
+                if (no_similar_count==0)
                     return EQUIP_ERR_OK;
 
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
@@ -8720,25 +8730,25 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
     }
 
     // search free slot - special bag case
-    if( pProto->BagFamily )
+    if (pProto->BagFamily)
     {
-        if(pProto->BagFamily & BAG_FAMILY_MASK_KEYS)
+        if (pProto->BagFamily & BAG_FAMILY_MASK_KEYS)
         {
             uint32 keyringSize = GetMaxKeyringSize();
             res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START,KEYRING_SLOT_START+keyringSize,dest,pProto,count,false,pItem,bag,slot);
-            if(res!=EQUIP_ERR_OK)
+            if (res!=EQUIP_ERR_OK)
             {
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return res;
             }
 
-            if(count==0)
+            if (count==0)
             {
-                if(no_similar_count==0)
+                if (no_similar_count==0)
                     return EQUIP_ERR_OK;
 
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
@@ -8747,15 +8757,15 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
         for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
         {
             res = _CanStoreItem_InBag(i,dest,pProto,count,false,false,pItem,bag,slot);
-            if(res!=EQUIP_ERR_OK)
+            if (res!=EQUIP_ERR_OK)
                 continue;
 
-            if(count==0)
+            if (count==0)
             {
-                if(no_similar_count==0)
+                if (no_similar_count==0)
                     return EQUIP_ERR_OK;
 
-                if(no_space_count)
+                if (no_space_count)
                     *no_space_count = count + no_similar_count;
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
@@ -8764,19 +8774,19 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
 
     // search free slot
     res = _CanStoreItem_InInventorySlots(INVENTORY_SLOT_ITEM_START,INVENTORY_SLOT_ITEM_END,dest,pProto,count,false,pItem,bag,slot);
-    if(res!=EQUIP_ERR_OK)
+    if (res!=EQUIP_ERR_OK)
     {
-        if(no_space_count)
+        if (no_space_count)
             *no_space_count = count + no_similar_count;
         return res;
     }
 
-    if(count==0)
+    if (count==0)
     {
-        if(no_similar_count==0)
+        if (no_similar_count==0)
             return EQUIP_ERR_OK;
 
-        if(no_space_count)
+        if (no_space_count)
             *no_space_count = count + no_similar_count;
         return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
     }
@@ -8784,21 +8794,21 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
     for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
     {
         res = _CanStoreItem_InBag(i,dest,pProto,count,false,true,pItem,bag,slot);
-        if(res!=EQUIP_ERR_OK)
+        if (res!=EQUIP_ERR_OK)
             continue;
 
-        if(count==0)
+        if (count==0)
         {
-            if(no_similar_count==0)
+            if (no_similar_count==0)
                 return EQUIP_ERR_OK;
 
-            if(no_space_count)
+            if (no_space_count)
                 *no_space_count = count + no_similar_count;
             return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
         }
     }
 
-    if(no_space_count)
+    if (no_space_count)
         *no_space_count = count + no_similar_count;
 
     return EQUIP_ERR_INVENTORY_FULL;
@@ -11758,6 +11768,19 @@ void Player::AddQuest( Quest const *pQuest, Object *questGiver )
     if(questGiver && pQuest->GetQuestStartScript()!=0)
         sWorld.ScriptsStart(sQuestStartScripts, pQuest->GetQuestStartScript(), questGiver, this);
 
+    // Some spells applied at quest activation
+    SpellAreaForQuestMapBounds saBounds = spellmgr.GetSpellAreaForQuestMapBounds(quest_id,true);
+    if(saBounds.first != saBounds.second)
+    {
+        uint32 zone, area;
+        GetZoneAndAreaId(zone,area);
+
+        for(SpellAreaForAreaMap::const_iterator itr = saBounds.first; itr != saBounds.second; ++itr)
+            if(itr->second->autocast && itr->second->IsFitToRequirements(this,zone,area))
+                if( !HasAura(itr->second->spellId,0) )
+                    CastSpell(this,itr->second->spellId,true);
+    }
+
     UpdateForQuestsGO();
 }
 
@@ -11799,7 +11822,7 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
 
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; ++i )
     {
-        if ( pQuest->ReqItemId[i] )
+        if (pQuest->ReqItemId[i])
             DestroyItemCount( pQuest->ReqItemId[i], pQuest->ReqItemCount[i], true);
     }
 
@@ -11807,12 +11830,12 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
     //    SetTimedQuest( 0 );
     m_timedquests.erase(pQuest->GetQuestId());
 
-    if ( pQuest->GetRewChoiceItemsCount() > 0 )
+    if (pQuest->GetRewChoiceItemsCount() > 0)
     {
-        if( pQuest->RewChoiceItemId[reward] )
+        if (pQuest->RewChoiceItemId[reward])
         {
             ItemPosCountVec dest;
-            if( CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, pQuest->RewChoiceItemId[reward], pQuest->RewChoiceItemCount[reward] ) == EQUIP_ERR_OK )
+            if (CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, pQuest->RewChoiceItemId[reward], pQuest->RewChoiceItemCount[reward] ) == EQUIP_ERR_OK)
             {
                 Item* item = StoreNewItem( dest, pQuest->RewChoiceItemId[reward], true);
                 SendNewItem(item, pQuest->RewChoiceItemCount[reward], true, false);
@@ -11820,14 +11843,14 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
         }
     }
 
-    if ( pQuest->GetRewItemsCount() > 0 )
+    if (pQuest->GetRewItemsCount() > 0)
     {
         for (uint32 i=0; i < pQuest->GetRewItemsCount(); ++i)
         {
-            if( pQuest->RewItemId[i] )
+            if (pQuest->RewItemId[i])
             {
                 ItemPosCountVec dest;
-                if( CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, pQuest->RewItemId[i], pQuest->RewItemCount[i] ) == EQUIP_ERR_OK )
+                if (CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, pQuest->RewItemId[i], pQuest->RewItemCount[i] ) == EQUIP_ERR_OK)
                 {
                     Item* item = StoreNewItem( dest, pQuest->RewItemId[i], true);
                     SendNewItem(item, pQuest->RewItemCount[i], true, false);
@@ -11838,13 +11861,8 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
 
     RewardReputation( pQuest );
 
-    if( pQuest->GetRewSpellCast() > 0 )
-        CastSpell( this, pQuest->GetRewSpellCast(), true);
-    else if( pQuest->GetRewSpell() > 0)
-        CastSpell( this, pQuest->GetRewSpell(), true);
-
     uint16 log_slot = FindQuestSlot( quest_id );
-    if( log_slot < MAX_QUEST_LOG_SIZE)
+    if (log_slot < MAX_QUEST_LOG_SIZE)
         SetQuestSlot(log_slot,0);
 
     QuestStatusData& q_status = mQuestStatus[quest_id];
@@ -11852,7 +11870,7 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
     // Not give XP in case already completed once repeatable quest
     uint32 XP = q_status.m_rewarded ? 0 : uint32(pQuest->XPValue( this )*sWorld.getRate(RATE_XP_QUEST));
 
-    if ( getLevel() < sWorld.getConfig(CONFIG_MAX_PLAYER_LEVEL) )
+    if (getLevel() < sWorld.getConfig(CONFIG_MAX_PLAYER_LEVEL))
         GiveXP( XP , NULL );
     else
         ModifyMoney( int32(pQuest->GetRewMoneyMaxLevel() * sWorld.getRate(RATE_DROP_MONEY)) );
@@ -11861,18 +11879,18 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
     ModifyMoney( pQuest->GetRewOrReqMoney() );
 
     // honor reward
-    if(pQuest->GetRewHonorableKills())
+    if (pQuest->GetRewHonorableKills())
         RewardHonor(NULL, 0, MaNGOS::Honor::hk_honor_at_level(getLevel(), pQuest->GetRewHonorableKills()));
 
     // title reward
-    if(pQuest->GetCharTitleId())
+    if (pQuest->GetCharTitleId())
     {
-        if(CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(pQuest->GetCharTitleId()))
+        if (CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(pQuest->GetCharTitleId()))
             SetTitle(titleEntry);
     }
 
     // Send reward mail
-    if(pQuest->GetRewMailTemplateId())
+    if (pQuest->GetRewMailTemplateId())
     {
         MailMessageType mailType;
         uint32 senderGuidOrEntry;
@@ -11910,9 +11928,9 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
         uint32 max_slot = questMailLoot.GetMaxSlotInLootFor(this);
         for(uint32 i = 0; mi.size() < MAX_MAIL_ITEMS && i < max_slot; ++i)
         {
-            if(LootItem* lootitem = questMailLoot.LootItemInSlot(i,this))
+            if (LootItem* lootitem = questMailLoot.LootItemInSlot(i,this))
             {
-                if(Item* item = Item::CreateItem(lootitem->itemid,lootitem->count,this))
+                if (Item* item = Item::CreateItem(lootitem->itemid,lootitem->count,this))
                 {
                     item->SaveToDB();                       // save for prevent lost at next mail load, if send fail then item will deleted
                     mi.AddItem(item->GetGUIDLow(), item->GetEntry(), item);
@@ -11923,20 +11941,53 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
         WorldSession::SendMailTo(this, mailType, MAIL_STATIONERY_NORMAL, senderGuidOrEntry, GetGUIDLow(), "", 0, &mi, 0, 0, MAIL_CHECK_MASK_NONE,pQuest->GetRewMailDelaySecs(),pQuest->GetRewMailTemplateId());
     }
 
-    if(pQuest->IsDaily())
+    if (pQuest->IsDaily())
         SetDailyQuestStatus(quest_id);
 
-    if ( !pQuest->IsRepeatable() )
+    if (!pQuest->IsRepeatable())
         SetQuestStatus(quest_id, QUEST_STATUS_COMPLETE);
     else
         SetQuestStatus(quest_id, QUEST_STATUS_NONE);
 
     q_status.m_rewarded = true;
+    if (q_status.uState != QUEST_NEW)
+        q_status.uState = QUEST_CHANGED;
 
-    if(announce)
+    if (announce)
         SendQuestReward( pQuest, XP, questGiver );
 
-    if (q_status.uState != QUEST_NEW) q_status.uState = QUEST_CHANGED;
+    // cast spells after mark quest complete (some spells have quest completed state reqyurements in spell_area data)
+    if (pQuest->GetRewSpellCast() > 0)
+        CastSpell( this, pQuest->GetRewSpellCast(), true);
+    else if ( pQuest->GetRewSpell() > 0)
+        CastSpell( this, pQuest->GetRewSpell(), true);
+
+    uint32 zone = 0;
+    uint32 area = 0;
+
+    // remove auras from spells with quest reward state limitations
+    SpellAreaForQuestMapBounds saEndBounds = spellmgr.GetSpellAreaForQuestEndMapBounds(quest_id);
+    if(saEndBounds.first != saEndBounds.second)
+    {
+        GetZoneAndAreaId(zone,area);
+
+        for(SpellAreaForAreaMap::const_iterator itr = saEndBounds.first; itr != saEndBounds.second; ++itr)
+            if(!itr->second->IsFitToRequirements(this,zone,area))
+                RemoveAurasDueToSpell(itr->second->spellId);
+    }
+
+    // Some spells applied at quest reward
+    SpellAreaForQuestMapBounds saBounds = spellmgr.GetSpellAreaForQuestMapBounds(quest_id,false);
+    if(saBounds.first != saBounds.second)
+    {
+        if(!zone || !area)
+            GetZoneAndAreaId(zone,area);
+
+        for(SpellAreaForAreaMap::const_iterator itr = saBounds.first; itr != saBounds.second; ++itr)
+            if(itr->second->autocast && itr->second->IsFitToRequirements(this,zone,area))
+                if( !HasAura(itr->second->spellId,0) )
+                    CastSpell(this,itr->second->spellId,true);
+    }
 }
 
 void Player::FailQuest( uint32 quest_id )
@@ -13233,7 +13284,8 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     m_name = fields[3].GetCppString();
 
     // check name limitations
-    if(!ObjectMgr::IsValidName(m_name) || (GetSession()->GetSecurity() == SEC_PLAYER && objmgr.IsReservedName(m_name)))
+    if (ObjectMgr::CheckPlayerName(m_name) != CHAR_NAME_SUCCESS ||
+        GetSession()->GetSecurity() == SEC_PLAYER && objmgr.IsReservedName(m_name))
     {
         delete result;
         CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE guid ='%u'", uint32(AT_LOGIN_RENAME),guid);
@@ -13743,7 +13795,7 @@ void Player::_LoadActions(QueryResult *result)
 {
     m_actionButtons.clear();
 
-    //QueryResult *result = CharacterDatabase.PQuery("SELECT button,action,type,misc FROM character_action WHERE guid = '%u' ORDER BY button",GetGUIDLow());
+    //QueryResult *result = CharacterDatabase.PQuery("SELECT button,action,type FROM character_action WHERE guid = '%u' ORDER BY button",GetGUIDLow());
 
     if(result)
     {
@@ -13752,9 +13804,11 @@ void Player::_LoadActions(QueryResult *result)
             Field *fields = result->Fetch();
 
             uint8 button = fields[0].GetUInt8();
+            uint32 action = fields[1].GetUInt32();
+            uint8 type = fields[2].GetUInt8();
 
-            if(addActionButton(button, fields[1].GetUInt16(), fields[2].GetUInt8(), fields[3].GetUInt8()))
-                m_actionButtons[button].uState = ACTIONBUTTON_UNCHANGED;
+            if(ActionButton* ab = addActionButton(button, action, type))
+                ab->uState = ACTIONBUTTON_UNCHANGED;
             else
             {
                 sLog.outError( "  ...at loading, and will deleted in DB also");
@@ -13980,7 +14034,7 @@ void Player::_LoadInventory(QueryResult *result, uint32 timediff)
                 item->SetSlot(NULL_SLOT);
                 // the item is in a bag, find the bag
                 std::map<uint64, Bag*>::const_iterator itr = bagMap.find(bag_guid);
-                if(itr != bagMap.end())
+                if(itr != bagMap.end() && slot < itr->second->GetBagSize())
                     itr->second->StoreItem(slot, item, true );
                 else
                     success = false;
@@ -14304,7 +14358,7 @@ void Player::_LoadSpells(QueryResult *result)
         {
             Field *fields = result->Fetch();
 
-            addSpell(fields[0].GetUInt16(), fields[1].GetBool(), false, true, fields[2].GetBool());
+            addSpell(fields[0].GetUInt32(), fields[1].GetBool(), false, true, fields[2].GetBool());
         }
         while( result->NextRow() );
 
@@ -14815,14 +14869,14 @@ void Player::_SaveActions()
         switch (itr->second.uState)
         {
             case ACTIONBUTTON_NEW:
-                CharacterDatabase.PExecute("INSERT INTO character_action (guid,button,action,type,misc) VALUES ('%u', '%u', '%u', '%u', '%u')",
-                    GetGUIDLow(), (uint32)itr->first, (uint32)itr->second.action, (uint32)itr->second.type, (uint32)itr->second.misc );
+                CharacterDatabase.PExecute("INSERT INTO character_action (guid,button,action,type) VALUES ('%u', '%u', '%u', '%u')",
+                    GetGUIDLow(), (uint32)itr->first, (uint32)itr->second.GetAction(), (uint32)itr->second.GetType() );
                 itr->second.uState = ACTIONBUTTON_UNCHANGED;
                 ++itr;
                 break;
             case ACTIONBUTTON_CHANGED:
-                CharacterDatabase.PExecute("UPDATE character_action  SET action = '%u', type = '%u', misc= '%u' WHERE guid= '%u' AND button= '%u' ",
-                    (uint32)itr->second.action, (uint32)itr->second.type, (uint32)itr->second.misc, GetGUIDLow(), (uint32)itr->first );
+                CharacterDatabase.PExecute("UPDATE character_action  SET action = '%u', type = '%u' WHERE guid= '%u' AND button= '%u' ",
+                    (uint32)itr->second.GetAction(), (uint32)itr->second.GetType(), GetGUIDLow(), (uint32)itr->first );
                 itr->second.uState = ACTIONBUTTON_UNCHANGED;
                 ++itr;
                 break;
@@ -14833,7 +14887,7 @@ void Player::_SaveActions()
             default:
                 ++itr;
                 break;
-        };
+        }
     }
 }
 
@@ -15485,7 +15539,6 @@ void Player::RemovePet(Pet* pet, PetSaveMode mode, bool returnreagent)
 
     pet->SavePetToDB(mode);
 
-    pet->CleanupsBeforeDelete();
     pet->AddObjectToRemoveList();
     pet->m_removed = true;
 
@@ -15632,8 +15685,7 @@ void Player::PetSpellInitialize()
             if(itr->second.state == PETSPELL_REMOVED)
                 continue;
 
-            data << uint16(itr->first);
-            data << uint16(itr->second.active);             // pet spell active state isn't boolean
+            data << uint32(MAKE_UNIT_ACTION_BUTTON(itr->first,itr->second.active));
             ++addlist;
         }
     }
@@ -15720,7 +15772,7 @@ void Player::CharmSpellInitialize()
         {
             for(uint32 i = 0; i < CREATURE_MAX_SPELLS; ++i)
             {
-                if(charmInfo->GetCharmSpell(i)->spellId)
+                if(charmInfo->GetCharmSpell(i)->GetAction())
                     ++addlist;
             }
         }
@@ -15745,11 +15797,8 @@ void Player::CharmSpellInitialize()
         for(uint32 i = 0; i < CREATURE_MAX_SPELLS; ++i)
         {
             CharmSpellEntry *cspell = charmInfo->GetCharmSpell(i);
-            if(cspell->spellId)
-            {
-                data << uint16(cspell->spellId);
-                data << uint16(cspell->active);
-            }
+            if(cspell->GetAction())
+                data << uint32(cspell->packedData);
         }
     }
 
@@ -16303,16 +16352,16 @@ void Player::InitDataForForm(bool reapplyMods)
 }
 
 // Return true is the bought item has a max count to force refresh of window by caller
-bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint64 bagguid, uint8 slot)
+bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint8 bag, uint8 slot)
 {
     // cheating attempt
-    if(count < 1) count = 1;
+    if (count < 1) count = 1;
 
-    if(!isAlive())
+    if (!isAlive())
         return false;
 
     ItemPrototype const *pProto = objmgr.GetItemPrototype( item );
-    if( !pProto )
+    if (!pProto)
     {
         SendBuyError( BUY_ERR_CANT_FIND_ITEM, NULL, item, 0);
         return false;
@@ -16334,7 +16383,7 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
     }
 
     size_t vendor_slot = vItems->FindItemSlot(item);
-    if(vendor_slot >= vItems->GetItemCount())
+    if (vendor_slot >= vItems->GetItemCount())
     {
         SendBuyError( BUY_ERR_CANT_FIND_ITEM, pCreature, item, 0);
         return false;
@@ -16343,39 +16392,39 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
     VendorItem const* crItem = vItems->m_items[vendor_slot];
 
     // check current item amount if it limited
-    if( crItem->maxcount != 0 )
+    if (crItem->maxcount != 0)
     {
-        if(pCreature->GetVendorItemCurrentCount(crItem) < pProto->BuyCount * count )
+        if (pCreature->GetVendorItemCurrentCount(crItem) < pProto->BuyCount * count )
         {
             SendBuyError( BUY_ERR_ITEM_ALREADY_SOLD, pCreature, item, 0);
             return false;
         }
     }
 
-    if( uint32(GetReputationRank(pProto->RequiredReputationFaction)) < pProto->RequiredReputationRank)
+    if (uint32(GetReputationRank(pProto->RequiredReputationFaction)) < pProto->RequiredReputationRank)
     {
         SendBuyError( BUY_ERR_REPUTATION_REQUIRE, pCreature, item, 0);
         return false;
     }
 
-    if(crItem->ExtendedCost)
+    if (crItem->ExtendedCost)
     {
         ItemExtendedCostEntry const* iece = sItemExtendedCostStore.LookupEntry(crItem->ExtendedCost);
-        if(!iece)
+        if (!iece)
         {
             sLog.outError("Item %u have wrong ExtendedCost field value %u", pProto->ItemId, crItem->ExtendedCost);
             return false;
         }
 
         // honor points price
-        if(GetHonorPoints() < (iece->reqhonorpoints * count))
+        if (GetHonorPoints() < (iece->reqhonorpoints * count))
         {
             SendEquipError(EQUIP_ERR_NOT_ENOUGH_HONOR_POINTS, NULL, NULL);
             return false;
         }
 
         // arena points price
-        if(GetArenaPoints() < (iece->reqarenapoints * count))
+        if (GetArenaPoints() < (iece->reqarenapoints * count))
         {
             SendEquipError(EQUIP_ERR_NOT_ENOUGH_ARENA_POINTS, NULL, NULL);
             return false;
@@ -16405,62 +16454,38 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
     // reputation discount
     price = uint32(floor(price * GetReputationPriceDiscount(pCreature)));
 
-    if( GetMoney() < price )
+    if (GetMoney() < price)
     {
         SendBuyError( BUY_ERR_NOT_ENOUGHT_MONEY, pCreature, item, 0);
         return false;
     }
 
-    uint8 bag = 0;                                          // init for case invalid bagGUID
-
-    if (bagguid != NULL_BAG && slot != NULL_SLOT)
-    {
-        if( bagguid == GetGUID() )
-        {
-            bag = INVENTORY_SLOT_BAG_0;
-        }
-        else
-        {
-            for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END;++i)
-            {
-                if( Bag *pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0,i) )
-                {
-                    if( bagguid == pBag->GetGUID() )
-                    {
-                        bag = i;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    if( IsInventoryPos( bag, slot ) || (bagguid == NULL_BAG && slot == NULL_SLOT) )
+    if ((bag == NULL_BAG && slot == NULL_SLOT) || IsInventoryPos(bag, slot))
     {
         ItemPosCountVec dest;
         uint8 msg = CanStoreNewItem( bag, slot, dest, item, pProto->BuyCount * count );
-        if( msg != EQUIP_ERR_OK )
+        if (msg != EQUIP_ERR_OK)
         {
             SendEquipError( msg, NULL, NULL );
             return false;
         }
 
         ModifyMoney( -(int32)price );
-        if(crItem->ExtendedCost)                            // case for new honor system
+        if (crItem->ExtendedCost)                            // case for new honor system
         {
             ItemExtendedCostEntry const* iece = sItemExtendedCostStore.LookupEntry(crItem->ExtendedCost);
-            if(iece->reqhonorpoints)
+            if (iece->reqhonorpoints)
                 ModifyHonorPoints( - int32(iece->reqhonorpoints * count));
-            if(iece->reqarenapoints)
+            if (iece->reqarenapoints)
                 ModifyArenaPoints( - int32(iece->reqarenapoints * count));
             for (uint8 i = 0; i < 5; ++i)
             {
-                if(iece->reqitem[i])
+                if (iece->reqitem[i])
                     DestroyItemCount(iece->reqitem[i], (iece->reqitemcount[i] * count), true);
             }
         }
 
-        if(Item *it = StoreNewItem( dest, item, true ))
+        if (Item *it = StoreNewItem( dest, item, true ))
         {
             uint32 new_count = pCreature->UpdateVendorItemCurrentCount(crItem,pProto->BuyCount * count);
 
@@ -16474,9 +16499,9 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
             SendNewItem(it, pProto->BuyCount*count, true, false, false);
         }
     }
-    else if( IsEquipmentPos( bag, slot ) )
+    else if (IsEquipmentPos(bag, slot))
     {
-        if(pProto->BuyCount * count != 1)
+        if (pProto->BuyCount * count != 1)
         {
             SendEquipError( EQUIP_ERR_ITEM_CANT_BE_EQUIPPED, NULL, NULL );
             return false;
@@ -16484,19 +16509,19 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
 
         uint16 dest;
         uint8 msg = CanEquipNewItem( slot, dest, item, false );
-        if( msg != EQUIP_ERR_OK )
+        if (msg != EQUIP_ERR_OK)
         {
             SendEquipError( msg, NULL, NULL );
             return false;
         }
 
         ModifyMoney( -(int32)price );
-        if(crItem->ExtendedCost)                            // case for new honor system
+        if (crItem->ExtendedCost)                            // case for new honor system
         {
             ItemExtendedCostEntry const* iece = sItemExtendedCostStore.LookupEntry(crItem->ExtendedCost);
-            if(iece->reqhonorpoints)
+            if (iece->reqhonorpoints)
                 ModifyHonorPoints( - int32(iece->reqhonorpoints));
-            if(iece->reqarenapoints)
+            if (iece->reqarenapoints)
                 ModifyArenaPoints( - int32(iece->reqarenapoints));
             for (uint8 i = 0; i < 5; ++i)
             {
@@ -16505,7 +16530,7 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
             }
         }
 
-        if(Item *it = EquipNewItem( dest, item, true ))
+        if (Item *it = EquipNewItem( dest, item, true ))
         {
             uint32 new_count = pCreature->UpdateVendorItemCurrentCount(crItem,pProto->BuyCount * count);
 
@@ -16527,7 +16552,7 @@ bool Player::BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint
         return false;
     }
 
-    return crItem->maxcount!=0;
+    return crItem->maxcount != 0;
 }
 
 uint32 Player::GetMaxPersonalArenaRatingRequirement()
@@ -17345,10 +17370,10 @@ void Player::learnDefaultSpells(bool loading)
 {
     // learn default race/class spells
     PlayerInfo const *info = objmgr.GetPlayerInfo(getRace(),getClass());
-    std::list<CreateSpellPair>::const_iterator spell_itr;
+    PlayerCreateInfoSpells::const_iterator spell_itr;
     for (spell_itr = info->spell.begin(); spell_itr!=info->spell.end(); ++spell_itr)
     {
-        uint16 tspell = spell_itr->first;
+        uint32 tspell = spell_itr->first;
         if (tspell)
         {
             sLog.outDebug("PLAYER: Adding initial spell, id = %u",tspell);
@@ -18071,22 +18096,12 @@ void Player::UpdateZoneDependentAuras( uint32 newZone )
         RemoveSpellsCausingAura(SPELL_AURA_FLY);
     }
 
-    // Some spells applied at enter into zone (with subzones)
-    // Human Illusion
-    // NOTE: these are removed by RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_CHANGE_MAP);
-    if ( newZone == 2367 )                                  // Old Hillsbrad Foothills
-    {
-        uint32 spellid = 0;
-        // all horde races
-        if( GetTeam() == HORDE )
-            spellid = getGender() == GENDER_FEMALE ? 35481 : 35480;
-        // and some alliance races
-        else if( getRace() == RACE_NIGHTELF || getRace() == RACE_DRAENEI )
-            spellid = getGender() == GENDER_FEMALE ? 35483 : 35482;
-
-        if(spellid && !HasAura(spellid,0) )
-            CastSpell(this,spellid,true);
-    }
+    // Some spells applied at enter into zone (with subzones), aura removed in UpdateAreaDependentAuras that called always at zone->area update
+    SpellAreaForAreaMapBounds saBounds = spellmgr.GetSpellAreaForAreaMapBounds(newZone);
+    for(SpellAreaForAreaMap::const_iterator itr = saBounds.first; itr != saBounds.second; ++itr)
+        if(itr->second->autocast && itr->second->IsFitToRequirements(this,newZone,0))
+            if( !HasAura(itr->second->spellId,0) )
+                CastSpell(this,itr->second->spellId,true);
 }
 
 void Player::UpdateAreaDependentAuras( uint32 newArea )
@@ -18095,32 +18110,18 @@ void Player::UpdateAreaDependentAuras( uint32 newArea )
     for(AuraMap::iterator iter = m_Auras.begin(); iter != m_Auras.end();)
     {
         // use m_zoneUpdateId for speed: UpdateArea called from UpdateZone or instead UpdateZone in both cases m_zoneUpdateId up-to-date
-        if(GetSpellAllowedInLocationError(iter->second->GetSpellProto(),GetMapId(),m_zoneUpdateId,newArea,GetBattleGroundId()) != SPELL_CAST_OK)
+        if(spellmgr.GetSpellAllowedInLocationError(iter->second->GetSpellProto(),GetMapId(),m_zoneUpdateId,newArea,this) != SPELL_CAST_OK)
             RemoveAura(iter);
         else
             ++iter;
     }
 
     // some auras applied at subzone enter
-    switch(newArea)
-    {
-        // unmount if enter in this subzone
-        case 35:
-            RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
-            break;
-        // Dragonmaw Illusion
-        case 3759:                                          // Netherwing Ledge
-        case 3939:                                          // Dragonmaw Fortress
-        case 3966:                                          // Dragonmaw Base Camp
-            if( GetDummyAura(40214) )
-            {
-                if( !HasAura(40216,0) )
-                    CastSpell(this,40216,true);
-                if( !HasAura(42016,0) )
-                    CastSpell(this,42016,true);
-            }
-            break;
-    }
+    SpellAreaForAreaMapBounds saBounds = spellmgr.GetSpellAreaForAreaMapBounds(newArea);
+    for(SpellAreaForAreaMap::const_iterator itr = saBounds.first; itr != saBounds.second; ++itr)
+        if(itr->second->autocast && itr->second->IsFitToRequirements(this,m_zoneUpdateId,newArea))
+            if( !HasAura(itr->second->spellId,0) )
+                CastSpell(this,itr->second->spellId,true);
 }
 
 uint32 Player::GetCorpseReclaimDelay(bool pvp) const

@@ -1539,6 +1539,12 @@ void ObjectMgr::LoadItemPrototypes()
             const_cast<ItemPrototype*>(proto)->Stackable = 255;
         }
 
+        if(proto->ContainerSlots > MAX_BAG_SIZE)
+        {
+            sLog.outErrorDb("Item (Entry: %u) has too large value in ContainerSlots (%u), replace by hardcoded limit (%u).",i,proto->ContainerSlots,MAX_BAG_SIZE);
+            const_cast<ItemPrototype*>(proto)->ContainerSlots = MAX_BAG_SIZE;
+        }
+
         for (int j = 0; j < MAX_ITEM_PROTO_STATS; ++j)
         {
             // for ItemStatValue != 0
@@ -2157,7 +2163,7 @@ void ObjectMgr::LoadPlayerInfo()
                 }
 
                 PlayerInfo* pInfo = &playerInfo[current_race][current_class];
-                pInfo->spell.push_back(CreateSpellPair(fields[2].GetUInt16(), fields[3].GetUInt8()));
+                pInfo->spell.push_back(CreateSpellPair(fields[2].GetUInt32(), fields[3].GetUInt8()));
 
                 bar.step();
                 ++count;
@@ -2173,8 +2179,8 @@ void ObjectMgr::LoadPlayerInfo()
 
     // Load playercreate actions
     {
-        //                                                0     1      2       3       4     5
-        QueryResult *result = WorldDatabase.Query("SELECT race, class, button, action, type, misc FROM playercreateinfo_action");
+        //                                                0     1      2       3       4
+        QueryResult *result = WorldDatabase.Query("SELECT race, class, button, action, type FROM playercreateinfo_action");
 
         uint32 count = 0;
 
@@ -2209,10 +2215,7 @@ void ObjectMgr::LoadPlayerInfo()
                 }
 
                 PlayerInfo* pInfo = &playerInfo[current_race][current_class];
-                pInfo->action[0].push_back(fields[2].GetUInt16());
-                pInfo->action[1].push_back(fields[3].GetUInt16());
-                pInfo->action[2].push_back(fields[4].GetUInt16());
-                pInfo->action[3].push_back(fields[5].GetUInt16());
+                pInfo->action.push_back(PlayerCreateInfoAction(fields[2].GetUInt8(),fields[3].GetUInt32(),fields[4].GetUInt8()));
 
                 bar.step();
                 ++count;
@@ -3352,13 +3355,20 @@ void ObjectMgr::LoadQuests()
                 qinfo->RewSpell = 0;                        // no spell reward will display for this quest
             }
 
-            else if(!SpellMgr::IsSpellValid(spellInfo))
+            if(!SpellMgr::IsSpellValid(spellInfo))
             {
-                sLog.outErrorDb("Quest %u has `RewSpell` = %u but spell %u is broken, quest can't be done.",
+                sLog.outErrorDb("Quest %u has `RewSpell` = %u but spell %u is broken, quest will not have a spell reward.",
                     qinfo->GetQuestId(),qinfo->RewSpell,qinfo->RewSpell);
                 qinfo->RewSpell = 0;                        // no spell reward will display for this quest
             }
 
+            if(GetTalentSpellCost(qinfo->RewSpell))
+            {
+                sLog.outErrorDb("Quest %u has `RewSpell` = %u but spell %u is talent, quest will not have a spell reward.",
+                    qinfo->GetQuestId(),qinfo->RewSpell,qinfo->RewSpell);
+                qinfo->RewSpell = 0;                        // no spell reward will display for this quest
+                continue;
+            }
         }
 
         if(qinfo->RewSpellCast)
@@ -3372,13 +3382,20 @@ void ObjectMgr::LoadQuests()
                 qinfo->RewSpellCast = 0;                    // no spell will be casted on player
             }
 
-            else if(!SpellMgr::IsSpellValid(spellInfo))
+            if(!SpellMgr::IsSpellValid(spellInfo))
             {
-                sLog.outErrorDb("Quest %u has `RewSpellCast` = %u but spell %u is broken, quest can't be done.",
+                sLog.outErrorDb("Quest %u has `RewSpellCast` = %u but spell %u is broken, quest will not have a spell reward.",
                     qinfo->GetQuestId(),qinfo->RewSpellCast,qinfo->RewSpellCast);
                 qinfo->RewSpellCast = 0;                    // no spell will be casted on player
             }
 
+            if(GetTalentSpellCost(qinfo->RewSpellCast))
+            {
+                sLog.outErrorDb("Quest %u has `RewSpell` = %u but spell %u is talent, quest will not have a spell reward.",
+                    qinfo->GetQuestId(),qinfo->RewSpellCast,qinfo->RewSpellCast);
+                qinfo->RewSpellCast = 0;                    // no spell will be casted on player
+                continue;
+            }
         }
 
         if(qinfo->RewMailTemplateId)
@@ -6326,18 +6343,24 @@ bool isValidString(std::wstring wstr, uint32 strictMask, bool numericOrSpace, bo
     return false;
 }
 
-bool ObjectMgr::IsValidName( const std::string& name, bool create )
+uint8 ObjectMgr::CheckPlayerName( const std::string& name, bool create )
 {
     std::wstring wname;
     if(!Utf8toWStr(name,wname))
-        return false;
+        return CHAR_NAME_INVALID_CHARACTER;
 
-    if(wname.size() < 1 || wname.size() > MAX_PLAYER_NAME)
-        return false;
+    if(wname.size() > MAX_PLAYER_NAME)
+        return CHAR_NAME_TOO_LONG;
+
+    uint32 minName = sWorld.getConfig(CONFIG_MIN_PLAYER_NAME);
+    if(wname.size() < minName)
+        return CHAR_NAME_TOO_SHORT;
 
     uint32 strictMask = sWorld.getConfig(CONFIG_STRICT_PLAYER_NAMES);
-
-    return isValidString(wname,strictMask,false,create);
+    if(!isValidString(wname,strictMask,false,create))
+        return CHAR_NAME_MIXED_LANGUAGES;
+    
+    return CHAR_NAME_SUCCESS;
 }
 
 bool ObjectMgr::IsValidCharterName( const std::string& name )
@@ -6346,7 +6369,11 @@ bool ObjectMgr::IsValidCharterName( const std::string& name )
     if(!Utf8toWStr(name,wname))
         return false;
 
-    if(wname.size() < 1)
+    if(wname.size() > MAX_CHARTER_NAME)
+        return false;
+
+    uint32 minName = sWorld.getConfig(CONFIG_MIN_CHARTER_NAME);
+    if(wname.size() < minName)
         return false;
 
     uint32 strictMask = sWorld.getConfig(CONFIG_STRICT_CHARTER_NAMES);
@@ -6354,18 +6381,24 @@ bool ObjectMgr::IsValidCharterName( const std::string& name )
     return isValidString(wname,strictMask,true);
 }
 
-bool ObjectMgr::IsValidPetName( const std::string& name )
+PetNameInvalidReason ObjectMgr::CheckPetName( const std::string& name )
 {
     std::wstring wname;
     if(!Utf8toWStr(name,wname))
-        return false;
+        return PET_NAME_INVALID;
 
-    if(wname.size() < 1)
-        return false;
+    if(wname.size() > MAX_PET_NAME)
+        return PET_NAME_TOO_LONG;
+
+    uint32 minName = sWorld.getConfig(CONFIG_MIN_PET_NAME);
+    if(wname.size() < minName)
+        return PET_NAME_TOO_SHORT;
 
     uint32 strictMask = sWorld.getConfig(CONFIG_STRICT_PET_NAMES);
+    if(!isValidString(wname,strictMask,false))
+        return PET_NAME_MIXED_LANGUAGES;
 
-    return isValidString(wname,strictMask,false);
+    return PET_NAME_SUCCESS;
 }
 
 int ObjectMgr::GetIndexForLocale( LocaleConstant loc )

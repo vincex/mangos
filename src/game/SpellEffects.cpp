@@ -204,7 +204,7 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
     &Spell::EffectUnused,                                   //146 SPELL_EFFECT_146                      unused
     &Spell::EffectQuestFail,                                //147 SPELL_EFFECT_QUEST_FAIL               quest fail
     &Spell::EffectUnused,                                   //148 SPELL_EFFECT_148                      unused
-    &Spell::EffectNULL,                                     //149 SPELL_EFFECT_149                      swoop
+    &Spell::EffectCharge2,                                  //149 SPELL_EFFECT_CHARGE2                  swoop
     &Spell::EffectUnused,                                   //150 SPELL_EFFECT_150                      unused
     &Spell::EffectTriggerRitualOfSummoning,                 //151 SPELL_EFFECT_TRIGGER_SPELL_2
     &Spell::EffectNULL,                                     //152 SPELL_EFFECT_152                      summon Refer-a-Friend
@@ -1028,32 +1028,25 @@ void Spell::EffectDummy(uint32 i)
                 {
                     if(!unitTarget || m_caster->GetTypeId() != TYPEID_PLAYER )
                         return;
-
-                    if(!unitTarget)
+                    // Spell has scriptable target but for sure.
+                    if (unitTarget->GetTypeId() != TYPEID_UNIT)
                         return;
 
-                    TemporarySummon* tempSummon = dynamic_cast<TemporarySummon*>(unitTarget);
-                    if(!tempSummon)
-                        return;
+                    uint32 health = unitTarget->GetHealth();
+                    float x, y, z, o;
 
-                    uint32 health = tempSummon->GetHealth();
+                    unitTarget->GetPosition(x, y, z);
+                    o = unitTarget->GetOrientation();
+                    ((Creature*)unitTarget)->ForcedDespawn();
 
-                    float x = tempSummon->GetPositionX();
-                    float y = tempSummon->GetPositionY();
-                    float z = tempSummon->GetPositionZ();
-                    float o = tempSummon->GetOrientation();
-                    tempSummon->UnSummon();
+                    if (Creature* summon = m_caster->SummonCreature(16992, x, y, z, o,TEMPSUMMON_TIMED_OR_DEAD_DESPAWN,180000))
+                    {
+                        summon->SetHealth(health);
+                        ((Player*)m_caster)->RewardPlayerAndGroupAtEvent(16992, summon);
 
-                    Creature* pCreature = m_caster->SummonCreature(16992, x, y, z, o,TEMPSUMMON_TIMED_OR_DEAD_DESPAWN,180000);
-                    if (!pCreature)
-                        return;
-
-                    pCreature->SetHealth(health);
-                    ((Player*)m_caster)->RewardPlayerAndGroupAtEvent(16992, pCreature);
-
-                    if (pCreature->AI())
-                        pCreature->AI()->AttackStart(m_caster);
-
+                        if (summon->AI())
+                            summon->AI()->AttackStart(m_caster);
+                    }
                     return;
                 }
                 case 44997:                                 // Converting Sentry
@@ -1136,21 +1129,19 @@ void Spell::EffectDummy(uint32 i)
                         return;
 
                     // immediately finishes the cooldown on Frost spells
-                    const PlayerSpellMap& sp_list = ((Player *)m_caster)->GetSpellMap();
-                    for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
+                    const SpellCooldowns& cm = ((Player *)m_caster)->GetSpellCooldownMap();
+                    for (SpellCooldowns::const_iterator itr = cm.begin(); itr != cm.end();)
                     {
-                        if (itr->second->state == PLAYERSPELL_REMOVED)
-                            continue;
-
-                        uint32 classspell = itr->first;
-                        SpellEntry const *spellInfo = sSpellStore.LookupEntry(classspell);
+                        SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
 
                         if( spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
                             (GetSpellSchoolMask(spellInfo) & SPELL_SCHOOL_MASK_FROST) &&
                             spellInfo->Id != 11958 && GetSpellRecoveryTime(spellInfo) > 0 )
                         {
-                            ((Player*)m_caster)->RemoveSpellCooldown(classspell, true);
+                            ((Player*)m_caster)->RemoveSpellCooldown((itr++)->first, true);
                         }
+                        else
+                            ++itr;
                     }
                     return;
                 }
@@ -1376,14 +1367,15 @@ void Spell::EffectDummy(uint32 i)
                         return;
 
                     //immediately finishes the cooldown for hunter abilities
-                    const PlayerSpellMap& sp_list = ((Player *)m_caster)->GetSpellMap();
-                    for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
+                    const SpellCooldowns& cm = ((Player*)m_caster)->GetSpellCooldownMap();
+                    for (SpellCooldowns::const_iterator itr = cm.begin(); itr != cm.end();)
                     {
-                        uint32 classspell = itr->first;
-                        SpellEntry const *spellInfo = sSpellStore.LookupEntry(classspell);
+                        SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
 
                         if (spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo->Id != 23989 && GetSpellRecoveryTime(spellInfo) > 0 )
-                            ((Player*)m_caster)->RemoveSpellCooldown(classspell,true);
+                            ((Player*)m_caster)->RemoveSpellCooldown((itr++)->first,true);
+                        else
+                            ++itr;
                     }
                     return;
                 }
@@ -3099,7 +3091,7 @@ void Spell::EffectSummon(uint32 i)
     spawnCreature->SetCreatorGUID(m_caster->GetGUID());
     spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
 
-    spawnCreature->InitStatsForLevel(level);
+    spawnCreature->InitStatsForLevel(level, m_caster);
 
     spawnCreature->GetCharmInfo()->SetPetNumber(pet_number, false);
 
@@ -3535,7 +3527,7 @@ void Spell::EffectSummonGuardian(uint32 i)
         spawnCreature->SetCreatorGUID(m_caster->GetGUID());
         spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
 
-        spawnCreature->InitStatsForLevel(level);
+        spawnCreature->InitStatsForLevel(level, m_caster);
         spawnCreature->GetCharmInfo()->SetPetNumber(pet_number, false);
 
         spawnCreature->AIM_Initialize();
@@ -3950,7 +3942,7 @@ void Spell::EffectSummonPet(uint32 i)
     if(m_caster->IsPvP())
         NewSummon->SetPvP(true);
 
-    NewSummon->InitStatsForLevel(petlevel);
+    NewSummon->InitStatsForLevel(petlevel, m_caster);
     NewSummon->InitPetCreateSpells();
 
     if(NewSummon->getPetType()==SUMMON_PET)
@@ -5521,7 +5513,7 @@ void Spell::EffectSkinning(uint32 /*i*/)
 
 void Spell::EffectCharge(uint32 /*i*/)
 {
-    if(!unitTarget || !m_caster)
+    if (!unitTarget)
         return;
 
     Unit *chargeTarget = m_targets.getUnitTarget();
@@ -5529,19 +5521,49 @@ void Spell::EffectCharge(uint32 /*i*/)
         return;
 
     float x, y, z;
+
     chargeTarget->GetContactPoint(m_caster, x, y, z);
     if(chargeTarget->GetTypeId() != TYPEID_PLAYER)
         ((Creature *)chargeTarget)->StopMoving();
 
     // Only send MOVEMENTFLAG_WALK_MODE, client has strange issues with other move flags
-    m_caster->SendMonsterMove(x, y, z, 0, MONSTER_MOVE_WALK, 1);
+    m_caster->SendMonsterMove(x, y, z, 0, m_caster->GetTypeId()==TYPEID_PLAYER ? MONSTER_MOVE_WALK : ((Creature*)m_caster)->GetMonsterMoveFlags(), 1);
 
-    if(m_caster->GetTypeId() != TYPEID_PLAYER)
+    if (m_caster->GetTypeId() != TYPEID_PLAYER)
         m_caster->GetMap()->CreatureRelocation((Creature*)m_caster,x,y,z,m_caster->GetOrientation());
 
     // not all charge effects used in negative spells
-    if ( !IsPositiveSpell(m_spellInfo->Id))
-        m_caster->Attack(chargeTarget,true);
+    if (unitTarget != m_caster && !IsPositiveSpell(m_spellInfo->Id))
+        m_caster->Attack(unitTarget,true);
+}
+
+void Spell::EffectCharge2(uint32 /*i*/)
+{
+    float x, y, z;
+    if (m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION)
+    {
+        x = m_targets.m_destX;
+        y = m_targets.m_destY;
+        z = m_targets.m_destZ;
+
+        if (unitTarget->GetTypeId() != TYPEID_PLAYER)
+            ((Creature *)unitTarget)->StopMoving();
+    }
+    else if (unitTarget && unitTarget != m_caster)
+        unitTarget->GetContactPoint(m_caster, x, y, z);
+    else
+        return;
+
+    // Only send MOVEMENTFLAG_WALK_MODE, client has strange issues with other move flags
+    m_caster->SendMonsterMove(x, y, z, 0, m_caster->GetTypeId()==TYPEID_PLAYER ? MONSTER_MOVE_WALK : ((Creature*)m_caster)->GetMonsterMoveFlags(), 1);
+
+    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+        m_caster->GetMap()->CreatureRelocation((Creature*)m_caster,x,y,z,m_caster->GetOrientation());
+
+    // not all charge effects used in negative spells
+
+    if (unitTarget && unitTarget != m_caster && !IsPositiveSpell(m_spellInfo->Id))
+        m_caster->Attack(unitTarget,true);
 }
 
 void Spell::EffectSummonCritter(uint32 i)

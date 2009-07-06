@@ -115,17 +115,6 @@ enum ActionButtonUpdateState
     ACTIONBUTTON_DELETED   = 3
 };
 
-struct ActionButton
-{
-    ActionButton() : action(0), type(0), misc(0), uState( ACTIONBUTTON_NEW ) {}
-    ActionButton(uint16 _action, uint8 _type, uint8 _misc) : action(_action), type(_type), misc(_misc), uState( ACTIONBUTTON_NEW ) {}
-
-    uint16 action;
-    uint8 type;
-    uint8 misc;
-    ActionButtonUpdateState uState;
-};
-
 enum ActionButtonType
 {
     ACTION_BUTTON_SPELL = 0,
@@ -133,6 +122,32 @@ enum ActionButtonType
     ACTION_BUTTON_MACRO = 64,
     ACTION_BUTTON_CMACRO= 65,
     ACTION_BUTTON_ITEM  = 128
+};
+
+#define ACTION_BUTTON_ACTION(X) (uint32(X) & 0x00FFFFFF)
+#define ACTION_BUTTON_TYPE(X)   ((uint32(X) & 0xFF000000) >> 24)
+#define MAX_ACTION_BUTTON_ACTION_VALUE (0x00FFFFFF+1)
+
+struct ActionButton
+{
+    ActionButton() : packedData(0), uState( ACTIONBUTTON_NEW ) {}
+
+    uint32 packedData;
+    ActionButtonUpdateState uState;
+
+    // helpers
+    ActionButtonType GetType() const { return ActionButtonType(ACTION_BUTTON_TYPE(packedData)); }
+    uint32 GetAction() const { return ACTION_BUTTON_ACTION(packedData); }
+    void SetActionAndType(uint32 action, ActionButtonType type)
+    {
+        uint32 newData = action | (uint32(type) << 24);
+        if (newData != packedData)
+        {
+            packedData = newData;
+            if (uState != ACTIONBUTTON_NEW)
+                uState = ACTIONBUTTON_CHANGED;
+        }
+    }
 };
 
 #define  MAX_ACTION_BUTTONS 132                             //checked in 2.3.0
@@ -172,6 +187,20 @@ struct PlayerLevelInfo
     uint8 stats[MAX_STATS];
 };
 
+typedef std::list<CreateSpellPair> PlayerCreateInfoSpells;
+
+struct PlayerCreateInfoAction
+{
+    PlayerCreateInfoAction() : button(0), type(0), action(0) {}
+    PlayerCreateInfoAction(uint8 _button, uint32 _action, uint8 _type) : button(_button), type(_type), action(_action) {}
+
+    uint8 button;
+    uint8 type;
+    uint32 action;
+};
+
+typedef std::list<PlayerCreateInfoAction> PlayerCreateInfoActions;
+
 struct PlayerInfo
 {
                                                             // existence checked by displayId != 0             // existence checked by displayId != 0
@@ -187,8 +216,8 @@ struct PlayerInfo
     uint16 displayId_m;
     uint16 displayId_f;
     PlayerCreateInfoItems item;
-    std::list<CreateSpellPair> spell;
-    std::list<uint16> action[4];
+    PlayerCreateInfoSpells spell;
+    PlayerCreateInfoActions action;
 
     PlayerLevelInfo* levelInfo;                             //[level-1] 0..MaxPlayerLevel-1
 };
@@ -1025,7 +1054,7 @@ class MANGOS_DLL_SPEC Player : public Unit
             return !IsInFeralForm() && (!mainhand || !HasFlag(UNIT_FIELD_FLAGS,UNIT_FLAG_DISARMED) );
         }
         void SendNewItem( Item *item, uint32 count, bool received, bool created, bool broadcast = false );
-        bool BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint64 bagguid, uint8 slot);
+        bool BuyItemFromVendor(uint64 vendorguid, uint32 item, uint8 count, uint8 bag, uint8 slot);
 
         float GetReputationPriceDiscount( Creature const* pCreature ) const;
         Player* GetTrader() const { return pTrader; }
@@ -1321,6 +1350,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         PlayerSpellMap const& GetSpellMap() const { return m_spells; }
         PlayerSpellMap      & GetSpellMap()       { return m_spells; }
 
+        SpellCooldowns const& GetSpellCooldownMap() const { return m_spellCooldowns; }
+
         void AddSpellMod(SpellModifier* mod, bool apply);
         int32 GetTotalFlatMods(uint32 spellId, SpellModOp op);
         int32 GetTotalPctMods(uint32 spellId, SpellModOp op);
@@ -1346,6 +1377,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendCooldownEvent(SpellEntry const *spellInfo, uint32 itemId = 0, Spell* spell = NULL);
         void ProhibitSpellScholl(SpellSchoolMask idSchoolMask, uint32 unTimeMs );
         void RemoveSpellCooldown(uint32 spell_id, bool update = false);
+        void RemoveSpellCategoryCooldown(uint32 cat, bool update = false);
         void SendClearCooldown( uint32 spell_id, Unit* target );
 
         void RemoveArenaSpellCooldowns();
@@ -1377,7 +1409,7 @@ class MANGOS_DLL_SPEC Player : public Unit
             m_cinematic = cine;
         }
 
-        bool addActionButton(uint8 button, uint16 action, uint8 type, uint8 misc);
+        ActionButton* addActionButton(uint8 button, uint32 action, uint8 type);
         void removeActionButton(uint8 button);
         void SendInitialActionButtons() const;
 

@@ -277,7 +277,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS]=
     &Aura::HandleAuraPeriodicDummy,                         //226 SPELL_AURA_PERIODIC_DUMMY
     &Aura::HandleNULL,                                      //227 periodic trigger spell
     &Aura::HandleNoImmediateEffect,                         //228 stealth detection
-    &Aura::HandleNULL,                                      //229 SPELL_AURA_MOD_AOE_DAMAGE_AVOIDANCE
+    &Aura::HandleNoImmediateEffect,                         //229 SPELL_AURA_MOD_AOE_DAMAGE_AVOIDANCE        implemented in Unit::SpellDamageBonus
     &Aura::HandleAuraModIncreaseMaxHealth,                  //230 Commanding Shout
     &Aura::HandleNULL,                                      //231
     &Aura::HandleNoImmediateEffect,                         //232 SPELL_AURA_MECHANIC_DURATION_MOD           implement in Unit::CalculateSpellDuration
@@ -2252,6 +2252,29 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             m_target->RemovePetAura(petSpell);
         return;
     }
+
+    if(GetEffIndex()==0 && m_target->GetTypeId()==TYPEID_PLAYER)
+    {
+        SpellAreaForAreaMapBounds saBounds = spellmgr.GetSpellAreaForAuraMapBounds(GetId());
+        if(saBounds.first != saBounds.second)
+        {
+            uint32 zone, area;
+            m_target->GetZoneAndAreaId(zone, area);
+
+            for(SpellAreaForAreaMap::const_iterator itr = saBounds.first; itr != saBounds.second; ++itr)
+            {
+                // some auras remove at aura remove
+                if(!itr->second->IsFitToRequirements((Player*)m_target, zone, area))
+                    m_target->RemoveAurasDueToSpell(itr->second->spellId);
+                // some auras applied at aura apply
+                else if(itr->second->autocast)
+                {
+                    if( !m_target->HasAura(itr->second->spellId, 0) )
+                        m_target->CastSpell(m_target, itr->second->spellId, true);
+                }
+            }
+        }
+    }
 }
 
 void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
@@ -3607,7 +3630,7 @@ void Aura::HandleModTaunt(bool apply, bool Real)
 
     Unit* caster = GetCaster();
 
-    if(!caster || !caster->isAlive() || caster->GetTypeId() != TYPEID_PLAYER)
+    if(!caster || !caster->isAlive())
         return;
 
     if(apply)
