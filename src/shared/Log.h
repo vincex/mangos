@@ -79,6 +79,10 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         if (raLogfile != NULL)
             fclose(raLogfile);
         raLogfile = NULL;
+		
+		if (arenaLogFile != NULL)
+			fclose(arenaLogFile);
+		arenaLogFile = NULL;
     }
     public:
         void Initialize();
@@ -107,6 +111,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
                                                             // any log level
         void outCharDump( const char * str, uint32 account_id, uint32 guid, const char * name );
         void outRALog( const char * str, ... )       ATTR_PRINTF(2,3);
+		void outArena( const char * str, ... )       ATTR_PRINTF(2,3);
         void SetLogLevel(char * Level);
         void SetLogFileLevel(char * Level);
         void SetColor(bool stdout_stream, Color color);
@@ -127,6 +132,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         FILE* gmLogfile;
         FILE* charLogfile;
         FILE* dberLogfile;
+		FILE* arenaLogFile;
 
         // log/console control
         uint32 m_logLevel;

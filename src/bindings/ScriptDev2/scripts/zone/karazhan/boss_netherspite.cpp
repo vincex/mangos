@@ -729,7 +729,7 @@ struct MANGOS_DLL_DECL boss_netherspiteAI : public ScriptedAI {
     }
 
     void Aggro(Unit *who) {
-        DoZoneInCombat();
+        m_creature->SetInCombatWithZone();
     }
 /*
     void AttackStart(Unit *who) {
