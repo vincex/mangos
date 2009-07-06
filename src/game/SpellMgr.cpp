@@ -295,7 +295,7 @@ bool IsPositiveTarget(uint32 targetA, uint32 targetB)
         case TARGET_CURRENT_ENEMY_COORDINATES:
         case TARGET_SINGLE_ENEMY:
             return false;
-        case TARGET_ALL_AROUND_CASTER:
+        case TARGET_CASTER_COORDINATES:
             return (targetB == TARGET_ALL_PARTY || targetB == TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER);
         default:
             break;
@@ -2427,6 +2427,13 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             // Blind
             else if (spellproto->SpellFamilyFlags & UI64LIT(0x00001000000))
                 return DIMINISHING_BLIND_CYCLONE;
+            break;
+        }
+        case SPELLFAMILY_HUNTER:
+        {
+            // Freezing trap
+            if (spellproto->SpellFamilyFlags & UI64LIT(0x00000000008))
+                return DIMINISHING_FREEZE;
             break;
         }
         case SPELLFAMILY_WARLOCK:
