@@ -138,9 +138,9 @@ struct MANGOS_DLL_DECL mob_abyssalAI : public ScriptedAI
         }
     }
 
-    void Aggro(Unit* who)
+    void Aggro(Unit* pWho)
     {
-        DoZoneInCombat();
+        m_creature->SetInCombatWithZone();
     }
 
     void AttackStart(Unit *who)
@@ -325,9 +325,9 @@ struct MANGOS_DLL_DECL boss_magtheridonAI : public ScriptedAI
         Intro = true;
     }
 
-    void Aggro(Unit *who)
+    void Aggro(Unit* pWho)
     {
-        DoZoneInCombat();
+        m_creature->SetInCombatWithZone();
         DoScriptText(SAY_AGGRO, m_creature);
     }
 
@@ -514,7 +514,7 @@ struct MANGOS_DLL_DECL mob_hellfire_channelerAI : public ScriptedAI
             m_pInstance->SetData(TYPE_CHANNELER_EVENT, NOT_STARTED);
     }
 
-    void Aggro(Unit *who)
+    void Aggro(Unit* pWho)
     {
         if (!m_pInstance)
             return;
@@ -531,7 +531,8 @@ struct MANGOS_DLL_DECL mob_hellfire_channelerAI : public ScriptedAI
         }
 
         m_pInstance->SetData(TYPE_CHANNELER_EVENT, IN_PROGRESS);
-        DoZoneInCombat();
+
+        m_creature->SetInCombatWithZone();
     }
 
     void JustSummoned(Creature *summon)
