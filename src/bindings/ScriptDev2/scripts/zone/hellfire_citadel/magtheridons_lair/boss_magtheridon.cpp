@@ -245,6 +245,7 @@ struct MANGOS_DLL_DECL boss_magtheridonAI : public ScriptedAI
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_8);
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        m_creature->ApplySpellImmune(0, IMMUNITY_STATE,SPELL_AURA_HASTE_SPELLS, true);
     }
 
     void SetClicker(uint64 cubeGUID, uint64 clickerGUID)
