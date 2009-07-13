@@ -403,14 +403,16 @@ struct MANGOS_DLL_DECL boss_leotheras_the_blindAI : public ScriptedAI
 
                 if (m_creature->HasAura(SPELL_WHIRLWIND, 0))
                     m_creature->RemoveAurasDueToSpell(SPELL_WHIRLWIND);
+                
+                CastConsumingMadness();
+                DespawnDemon();
 
                 //switch to nightelf form
                 m_creature->SetDisplayId(MODEL_NIGHTELF);
 
                 if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() != TARGETED_MOTION_TYPE)
                     m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim());
-                    CastConsumingMadness();
-
+					
                 //set true
                 SetCombatMovement(true);
 

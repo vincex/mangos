@@ -61,6 +61,7 @@ struct MANGOS_DLL_DECL boss_curatorAI : public ScriptedAI
         Evocating = false;
 
         m_creature->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_ARCANE, true);
+        m_creature->ApplySpellImmune(0, IMMUNITY_STATE,SPELL_AURA_PERIODIC_MANA_LEECH, true);
     }
 
     void KilledUnit(Unit *victim)

@@ -62,6 +62,9 @@ struct MANGOS_DLL_DECL boss_void_reaverAI : public ScriptedAI
         KnockAway_Timer = 30000;
         Berserk_Timer = 600000;
 
+        m_creature->ApplySpellImmune(0, IMMUNITY_STATE,SPELL_AURA_PERIODIC_LEECH, true);
+        m_creature->ApplySpellImmune(0, IMMUNITY_STATE,SPELL_AURA_PERIODIC_MANA_LEECH, true);
+
         if (m_pInstance && m_creature->isAlive())
             m_pInstance->SetData(DATA_VOIDREAVEREVENT, NOT_STARTED);
     }
