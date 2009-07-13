@@ -126,16 +126,10 @@ enum
  MAX_ADVISORS                        = 4
 };
 
- //weapon id + position
- float KaelthasWeapons[7][5] =
+uint32 m_auiSpellSummonWeapon[]=
 {
- {21270, 794.38, 15, 48.72, 2.9},                        //[Cosmic Infuser]
- {21269, 785.47, 12.12, 48.72, 3.14},                    //[Devastation]
- {21271, 781.25, 4.39, 48.72, 3.14},                     //[Infinity Blade]
- {21273, 777.38, -0.81, 48.72, 3.06},                    //[Phaseshift Bulwark]
- {21274, 781.48, -6.08, 48.72, 3.9},                     //[Staff of Disintegration]
- {21272, 785.42, -13.59, 48.72, 3.4},                    //[Warp Slicer]
- {21268, 793.06, -16.61, 48.72, 3.10}                    //[Netherstrand Longbow]
+    SPELL_SUMMON_WEAPONA, SPELL_SUMMON_WEAPONB, SPELL_SUMMON_WEAPONC, SPELL_SUMMON_WEAPOND,
+    SPELL_SUMMON_WEAPONE, SPELL_SUMMON_WEAPONF, SPELL_SUMMON_WEAPONG
 };
 
 
@@ -647,12 +641,9 @@ struct MANGOS_DLL_DECL boss_kaelthasAI : public ScriptedAI
                 {
                     m_creature->CastSpell(m_creature, SPELL_SUMMON_WEAPONS, false);
 
-					Creature* Weapon;
-					for (uint32 i = 0; i < 7; i++)
-					{
-						if(Weapon = m_creature->SummonCreature(((uint32)KaelthasWeapons[i][0]),KaelthasWeapons[i][1],KaelthasWeapons[i][2],KaelthasWeapons[i][3],0,TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 60000))
-							Weapon->CastSpell(Weapon, SPELL_WEAPON_SPAWN, false);
-					}
+					uint8 uiMaxWeapon = sizeof(m_auiSpellSummonWeapon)/sizeof(uint32);
+                    for (uint32 i = 0; i < uiMaxWeapon; ++i)
+                        m_creature->CastSpell(m_creature,m_auiSpellSummonWeapon[i],true);
 					    
                     PhaseSubphase = 2;
                     Phase_Timer = TIME_PHASE_2_3;
