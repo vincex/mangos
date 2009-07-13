@@ -24,6 +24,7 @@ EndScriptData */
 #include "precompiled.h"
 #include "def_the_eye.h"
 #include "WorldPacket.h"
+#include "../../../creature/simple_ai.h"
 
 enum
 {
@@ -1424,6 +1425,130 @@ struct MANGOS_DLL_DECL mob_phoenix_egg_tkAI : public ScriptedAI
     }
 };
 
+CreatureAI* GetAI_mob_phaseshift_bulwark(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36988;                          //Shield Bash
+    pAI->Spell[0].Cooldown = 15000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_warp_slicer(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 369991;                          //Rend
+    pAI->Spell[0].Cooldown = 20000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_infinity_blades(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 3391;                          //Trash(extra attack)
+    pAI->Spell[0].Cooldown = 10000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_cosmic_infuser(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36985;                          //Holy Nova
+    pAI->Spell[0].Cooldown = 30000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 25000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[1].Enabled = true;
+    pAI->Spell[1].Spell_Id = 36983;                          //Heal
+    pAI->Spell[1].Cooldown = 15000;
+    pAI->Spell[1].CooldownRandomAddition = 5000;
+    pAI->Spell[1].First_Cast = 15000;
+    pAI->Spell[1].Cast_Target_Type = CAST_SELF;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_staff_of_disintegration(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36990;                          //FrostBolt
+    pAI->Spell[0].Cooldown = 10000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 4000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[1].Enabled = true;
+    pAI->Spell[1].Spell_Id = 36989;                          //FrostNova
+    pAI->Spell[1].Cooldown = 25000;
+    pAI->Spell[1].CooldownRandomAddition = 5000;
+    pAI->Spell[1].First_Cast = 10000;
+    pAI->Spell[1].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_netherstrand_longbow(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36980;                          //Shoot
+    pAI->Spell[0].Cooldown = 5000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 5000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[1].Enabled = true;
+    pAI->Spell[1].Spell_Id = 36979;                          //Multi-Shot
+    pAI->Spell[1].Cooldown = 20000;
+    pAI->Spell[1].CooldownRandomAddition = 5000;
+    pAI->Spell[1].First_Cast = 10000;
+    pAI->Spell[1].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[2].Enabled = true;
+    pAI->Spell[2].Spell_Id = 36994;                          //Blink
+    pAI->Spell[2].Cooldown = 30000;
+    pAI->Spell[2].CooldownRandomAddition = 5000;
+    pAI->Spell[2].First_Cast = 15000;
+    pAI->Spell[2].Cast_Target_Type = CAST_SELF;
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_devastation(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36981;                          //Whirlwind
+    pAI->Spell[0].Cooldown = 15000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+    return pAI;
+}
+
 CreatureAI* GetAI_boss_kaelthas(Creature* pCreature)
 {
     return new boss_kaelthasAI(pCreature);
@@ -1505,5 +1630,40 @@ void AddSC_boss_kaelthas()
     newscript = new Script;
     newscript->Name = "mob_phoenix_egg_tk";
     newscript->GetAI = &GetAI_mob_phoenix_egg_tk;
+    newscript->RegisterSelf();
+	
+    newscript = new Script;
+    newscript->Name = "mob_phaseshift_bulwark";
+    newscript->GetAI = &GetAI_mob_phaseshift_bulwark;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_warp_slicer";
+    newscript->GetAI = &GetAI_mob_warp_slicer;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_infinity_blades";
+    newscript->GetAI = &GetAI_mob_infinity_blades;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_cosmic_infuser";
+    newscript->GetAI = &GetAI_mob_cosmic_infuser;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_staff_of_disintegration";
+    newscript->GetAI = &GetAI_mob_staff_of_disintegration;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_netherstrand_longbow";
+    newscript->GetAI = &GetAI_mob_netherstrand_longbow;
+    newscript->RegisterSelf();
+	
+    newscript = new Script;
+    newscript->Name = "mob_devastation";
+    newscript->GetAI = &GetAI_mob_devastation;
     newscript->RegisterSelf();
 }
