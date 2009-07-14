@@ -590,6 +590,15 @@ void ObjectMgr::LoadCreatureTemplates()
                 sLog.outErrorDb("Creature (Entry: %u) has non-existing PetSpellDataId (%u)", cInfo->Entry, cInfo->PetSpellDataId);
         }
 
+        for(int i = 0; i < CREATURE_MAX_SPELLS; ++i)
+        {
+            if(cInfo->spells[i] && !sSpellStore.LookupEntry(cInfo->spells[i]))
+            {
+                sLog.outErrorDb("Creature (Entry: %u) has non-existing Spell%d (%u), set to 0", cInfo->Entry, i+1,cInfo->spells[i]);
+                const_cast<CreatureInfo*>(cInfo)->spells[i] = 0;
+            }
+        }
+
         if(cInfo->MovementType >= MAX_DB_MOTION_TYPE)
         {
             sLog.outErrorDb("Creature (Entry: %u) has wrong movement generator type (%u), ignore and set to IDLE.",cInfo->Entry,cInfo->MovementType);
@@ -691,67 +700,53 @@ void ObjectMgr::ConvertCreatureAddonAuras(CreatureDataAddon* addon, char const* 
     endAura.effect_idx = 0;
 }
 
+void ObjectMgr::LoadCreatureAddons(SQLStorage& creatureaddons, char const* entryName, char const* comment)
+{
+    creatureaddons.Load();
+
+    sLog.outString(">> Loaded %u %s", creatureaddons.RecordCount, comment);
+    sLog.outString();
+
+    // check data correctness and convert 'auras'
+    for(uint32 i = 1; i < creatureaddons.MaxEntry; ++i)
+    {
+        CreatureDataAddon const* addon = creatureaddons.LookupEntry<CreatureDataAddon>(i);
+        if(!addon)
+            continue;
+
+        if (addon->mount)
+        {
+            if (!sCreatureDisplayInfoStore.LookupEntry(addon->mount))
+            {
+                sLog.outErrorDb("Creature (%s %u) have invalid displayInfoId for mount (%u) defined in `%s`.", entryName, addon->guidOrEntry, addon->mount, creatureaddons.GetTableName());
+                const_cast<CreatureDataAddon*>(addon)->mount = 0;
+            }
+        }
+
+        if (!sEmotesStore.LookupEntry(addon->emote))
+            sLog.outErrorDb("Creature (%s %u) have invalid emote (%u) defined in `%s`.", entryName, addon->guidOrEntry, addon->emote, creatureaddons.GetTableName());
+
+        ConvertCreatureAddonAuras(const_cast<CreatureDataAddon*>(addon), creatureaddons.GetTableName(), entryName);
+    }
+}
+
 void ObjectMgr::LoadCreatureAddons()
 {
-    sCreatureInfoAddonStorage.Load();
+    LoadCreatureAddons(sCreatureInfoAddonStorage,"Entry","creature template addons");
 
-    sLog.outString( ">> Loaded %u creature template addons", sCreatureInfoAddonStorage.RecordCount );
-    sLog.outString();
-
-    // check data correctness and convert 'auras'
+    // check entry ids
     for(uint32 i = 1; i < sCreatureInfoAddonStorage.MaxEntry; ++i)
-    {
-        CreatureDataAddon const* addon = sCreatureInfoAddonStorage.LookupEntry<CreatureDataAddon>(i);
-        if(!addon)
-            continue;
+        if(CreatureDataAddon const* addon = sCreatureInfoAddonStorage.LookupEntry<CreatureDataAddon>(i))
+            if(!sCreatureStorage.LookupEntry<CreatureInfo>(addon->guidOrEntry))
+                sLog.outErrorDb("Creature (Entry: %u) does not exist but has a record in `%s`",addon->guidOrEntry, sCreatureInfoAddonStorage.GetTableName());
 
-        if (addon->mount)
-        {
-            if (!sCreatureDisplayInfoStore.LookupEntry(addon->mount))
-            {
-                sLog.outErrorDb("Creature (Entry %u) have invalid displayInfoId for mount (%u) defined in `creature_template_addon`.",addon->guidOrEntry, addon->mount);
-                const_cast<CreatureDataAddon*>(addon)->mount = 0;
-            }
-        }
+    LoadCreatureAddons(sCreatureDataAddonStorage,"GUID","creature addons");
 
-        if (!sEmotesStore.LookupEntry(addon->emote))
-            sLog.outErrorDb("Creature (Entry %u) have invalid emote (%u) defined in `creature_template_addon`.",addon->guidOrEntry, addon->emote);
-
-        ConvertCreatureAddonAuras(const_cast<CreatureDataAddon*>(addon), "creature_template_addon", "Entry");
-
-        if(!sCreatureStorage.LookupEntry<CreatureInfo>(addon->guidOrEntry))
-            sLog.outErrorDb("Creature (Entry: %u) does not exist but has a record in `creature_template_addon`",addon->guidOrEntry);
-    }
-
-    sCreatureDataAddonStorage.Load();
-
-    sLog.outString( ">> Loaded %u creature addons", sCreatureDataAddonStorage.RecordCount );
-    sLog.outString();
-
-    // check data correctness and convert 'auras'
+    // check entry ids
     for(uint32 i = 1; i < sCreatureDataAddonStorage.MaxEntry; ++i)
-    {
-        CreatureDataAddon const* addon = sCreatureDataAddonStorage.LookupEntry<CreatureDataAddon>(i);
-        if(!addon)
-            continue;
-
-        if (addon->mount)
-        {
-            if (!sCreatureDisplayInfoStore.LookupEntry(addon->mount))
-            {
-                sLog.outErrorDb("Creature (GUID %u) have invalid displayInfoId for mount (%u) defined in `creature_addon`.",addon->guidOrEntry, addon->mount);
-                const_cast<CreatureDataAddon*>(addon)->mount = 0;
-            }
-        }
-
-        if (!sEmotesStore.LookupEntry(addon->emote))
-            sLog.outErrorDb("Creature (GUID %u) have invalid emote (%u) defined in `creature_addon`.",addon->guidOrEntry, addon->emote);
-
-        ConvertCreatureAddonAuras(const_cast<CreatureDataAddon*>(addon), "creature_addon", "GUIDLow");
-
-        if(mCreatureDataMap.find(addon->guidOrEntry)==mCreatureDataMap.end())
-            sLog.outErrorDb("Creature (GUID: %u) does not exist but has a record in `creature_addon`",addon->guidOrEntry);
-    }
+        if(CreatureDataAddon const* addon = sCreatureDataAddonStorage.LookupEntry<CreatureDataAddon>(i))
+            if(mCreatureDataMap.find(addon->guidOrEntry)==mCreatureDataMap.end())
+                sLog.outErrorDb("Creature (GUID: %u) does not exist but has a record in `creature_addon`",addon->guidOrEntry);
 }
 
 EquipmentInfo const* ObjectMgr::GetEquipmentInfo(uint32 entry)
@@ -2414,10 +2409,6 @@ void ObjectMgr::LoadPlayerInfo()
 
             // skip expansion races if not playing with expansion
             if (sWorld.getConfig(CONFIG_EXPANSION) < 1 && (race == RACE_BLOODELF || race == RACE_DRAENEI))
-                continue;
-
-            // skip expansion classes if not playing with expansion
-            if (sWorld.getConfig(CONFIG_EXPANSION) < 2 && class_ == CLASS_DEATH_KNIGHT)
                 continue;
 
             // fatal error if no level 1 data
