@@ -237,7 +237,7 @@ struct MANGOS_DLL_DECL boss_lady_vashjAI : public ScriptedAI
                 pSummoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             }
 
-            pSummoned->CastSpell(m_creature,SPELL_MAGIC_BARRIER,true);
+            //pSummoned->CastSpell(m_creature,SPELL_MAGIC_BARRIER,true);
         }
     }
 
@@ -483,6 +483,28 @@ struct MANGOS_DLL_DECL boss_lady_vashjAI : public ScriptedAI
 
                     m_uiPhase = PHASE_3;
                 }
+
+                // check item tainted core. if player has item, cast root. if not has item and is rooted, remove root
+                Map *pMap = m_creature->GetMap();
+                if (!pMap->IsDungeon())
+                    return;
+                Map::PlayerList const &PlayerList = pMap->GetPlayers();
+                if (PlayerList.isEmpty())
+	                return;
+                 for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
+                {
+                    if(Player* pPlayer = i->getSource())
+                    {
+                        if(pPlayer->HasItemCount(31088, 1, false))
+                        {
+                            if(!pPlayer->HasAura(39258))
+                                pPlayer->CastSpell(pPlayer, 39258, false); // spell root
+                        }
+                        else if(pPlayer->HasAura(39258))
+                            pPlayer->RemoveAurasDueToSpell(39258);
+                    }
+                }
+
                 m_uiCheck_Timer = 1000;
             }else m_uiCheck_Timer -= uiDiff;
         }
@@ -673,10 +695,38 @@ struct MANGOS_DLL_DECL mob_shield_generator_channelAI : public ScriptedAI
     }
 
     ScriptedInstance* m_pInstance;                          // the instance
+    uint32 Check_Timer;
+    bool Casted;
 
-    void Reset() { }
+    void Reset()
+    {
+        m_creature->SetUInt32Value(UNIT_FIELD_DISPLAYID , 11686);  //invisible
+        Check_Timer = 0;
+        Casted = false;
+     }
 
     void MoveInLineOfSight(Unit* pWho) { }
+
+    void UpdateAI (const uint32 diff)
+    {
+        if(!m_pInstance)
+            return;
+
+        if(Check_Timer < diff)
+        {
+            Creature* pVashj = (Creature*)(Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_LADYVASHJ)));
+            if(pVashj && pVashj->isAlive())
+            {
+                //start visual channel
+                if (!Casted || !pVashj->HasAura(SPELL_MAGIC_BARRIER,0))
+                {
+                    m_creature->CastSpell(pVashj,SPELL_MAGIC_BARRIER,true);
+                    Casted = true;
+                }
+            }
+            Check_Timer = 1000;
+        }else Check_Timer -= diff;
+	}
 };
 
 //this is wrong, alternative script needed
@@ -731,9 +781,13 @@ bool ItemUse_item_tainted_core(Player* pPlayer, Item* pItem, SpellCastTargets co
 
             //remove this item
             pPlayer->DestroyItemCount(31088, 1, true);
-			
-            if(pInstance->GetData(TYPE_VASHJ_PHASE3_CHECK)!=DONE)
-                 pVashj->CastSpell(pVashj, SPELL_MAGIC_BARRIER, false);
+        }
+        else if( sctTargets.getUnitTarget()->GetTypeId()==TYPEID_UNIT )
+            return false;
+        else if(sctTargets.getUnitTarget()->GetTypeId()==TYPEID_PLAYER)
+        {
+            pPlayer->DestroyItemCount(31088, 1, true);
+            pPlayer->CastSpell(sctTargets.getUnitTarget(), 38134, true);
         }
     }
     return true;

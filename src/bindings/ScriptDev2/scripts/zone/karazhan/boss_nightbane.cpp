@@ -374,8 +374,8 @@ struct MANGOS_DLL_DECL boss_nightbaneAI : public ScriptedAI
         speed *= 0.001f;
 
         uint32 TotalTime = static_cast<uint32>( dist/speed + 0.5 );
-        m_creature->SendMonsterMove(DestX,DestY,DestZ,0,true,TotalTime);
-        m_creature->Relocate(DestX,DestY,DestZ);
+        m_creature->GetMap()->CreatureRelocation(m_creature,DestX,DestY,DestZ,0.0f);
+		m_creature->SendMonsterMove(DestX,DestY,DestZ,0,MONSTER_MOVE_FLY,0);
         return TotalTime;
     }
 };

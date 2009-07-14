@@ -24,6 +24,7 @@ EndScriptData */
 #include "precompiled.h"
 #include "def_the_eye.h"
 #include "WorldPacket.h"
+#include "../../../creature/simple_ai.h"
 
 enum
 {
@@ -126,16 +127,10 @@ enum
  MAX_ADVISORS                        = 4
 };
 
- //weapon id + position
- float KaelthasWeapons[7][5] =
+uint32 m_auiSpellSummonWeapon[]=
 {
- {21270, 794.38, 15, 48.72, 2.9},                        //[Cosmic Infuser]
- {21269, 785.47, 12.12, 48.72, 3.14},                    //[Devastation]
- {21271, 781.25, 4.39, 48.72, 3.14},                     //[Infinity Blade]
- {21273, 777.38, -0.81, 48.72, 3.06},                    //[Phaseshift Bulwark]
- {21274, 781.48, -6.08, 48.72, 3.9},                     //[Staff of Disintegration]
- {21272, 785.42, -13.59, 48.72, 3.4},                    //[Warp Slicer]
- {21268, 793.06, -16.61, 48.72, 3.10}                    //[Netherstrand Longbow]
+    SPELL_SUMMON_WEAPONA, SPELL_SUMMON_WEAPONB, SPELL_SUMMON_WEAPONC, SPELL_SUMMON_WEAPOND,
+    SPELL_SUMMON_WEAPONE, SPELL_SUMMON_WEAPONF, SPELL_SUMMON_WEAPONG
 };
 
 
@@ -333,6 +328,7 @@ struct MANGOS_DLL_DECL boss_kaelthasAI : public ScriptedAI
 
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        m_creature->ApplySpellImmune(0, IMMUNITY_STATE,SPELL_AURA_HASTE_SPELLS, true); //tounge ecc
 
         if (m_pInstance)
             m_pInstance->SetData(DATA_KAELTHASEVENT, 0);
@@ -647,12 +643,9 @@ struct MANGOS_DLL_DECL boss_kaelthasAI : public ScriptedAI
                 {
                     m_creature->CastSpell(m_creature, SPELL_SUMMON_WEAPONS, false);
 
-					Creature* Weapon;
-					for (uint32 i = 0; i < 7; i++)
-					{
-						if(Weapon = m_creature->SummonCreature(((uint32)KaelthasWeapons[i][0]),KaelthasWeapons[i][1],KaelthasWeapons[i][2],KaelthasWeapons[i][3],0,TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 60000))
-							Weapon->CastSpell(Weapon, SPELL_WEAPON_SPAWN, false);
-					}
+					uint8 uiMaxWeapon = sizeof(m_auiSpellSummonWeapon)/sizeof(uint32);
+                    for (uint32 i = 0; i < uiMaxWeapon; ++i)
+                        m_creature->CastSpell(m_creature,m_auiSpellSummonWeapon[i],true);
 					    
                     PhaseSubphase = 2;
                     Phase_Timer = TIME_PHASE_2_3;
@@ -810,8 +803,9 @@ struct MANGOS_DLL_DECL boss_kaelthasAI : public ScriptedAI
                         m_creature->StopMoving();
                         m_creature->GetMotionMaster()->Clear();
                         m_creature->GetMotionMaster()->MoveIdle();
-                        m_creature->Relocate(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0);
-                        m_creature->SendMonsterMove(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0, 0, 0);
+
+                        m_creature->GetMap()->CreatureRelocation(m_creature, afGravityPos[0], afGravityPos[1], afGravityPos[2], 0.0f);
+                        m_creature->SendMonsterMove(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0, MONSTER_MOVE_NONE, 0);
 
                         m_creature->InterruptNonMeleeSpells(false);
                         DoCast(m_creature, SPELL_FULLPOWER);
@@ -874,8 +868,8 @@ struct MANGOS_DLL_DECL boss_kaelthasAI : public ScriptedAI
                                 m_creature->StopMoving();
                                 m_creature->GetMotionMaster()->Clear();
                                 m_creature->GetMotionMaster()->MoveIdle();
-                                m_creature->Relocate(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0);
-                                m_creature->SendMonsterMove(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0, 0, 0);
+                                m_creature->GetMap()->CreatureRelocation(m_creature, afGravityPos[0], afGravityPos[1], afGravityPos[2], 0.0f);
+                                m_creature->SendMonsterMove(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0, MONSTER_MOVE_NONE, 0);
 
                                 // 1) Kael'thas will portal the whole raid right into his body
                                 for (i = m_creature->getThreatManager().getThreatList().begin(); i!= m_creature->getThreatManager().getThreatList().end();++i)
@@ -1431,6 +1425,130 @@ struct MANGOS_DLL_DECL mob_phoenix_egg_tkAI : public ScriptedAI
     }
 };
 
+CreatureAI* GetAI_mob_phaseshift_bulwark(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36988;                          //Shield Bash
+    pAI->Spell[0].Cooldown = 15000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_warp_slicer(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 369991;                          //Rend
+    pAI->Spell[0].Cooldown = 20000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_infinity_blades(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 3391;                          //Trash(extra attack)
+    pAI->Spell[0].Cooldown = 10000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_cosmic_infuser(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36985;                          //Holy Nova
+    pAI->Spell[0].Cooldown = 30000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 25000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[1].Enabled = true;
+    pAI->Spell[1].Spell_Id = 36983;                          //Heal
+    pAI->Spell[1].Cooldown = 15000;
+    pAI->Spell[1].CooldownRandomAddition = 5000;
+    pAI->Spell[1].First_Cast = 15000;
+    pAI->Spell[1].Cast_Target_Type = CAST_SELF;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_staff_of_disintegration(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36990;                          //FrostBolt
+    pAI->Spell[0].Cooldown = 10000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 4000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[1].Enabled = true;
+    pAI->Spell[1].Spell_Id = 36989;                          //FrostNova
+    pAI->Spell[1].Cooldown = 25000;
+    pAI->Spell[1].CooldownRandomAddition = 5000;
+    pAI->Spell[1].First_Cast = 10000;
+    pAI->Spell[1].Cast_Target_Type = CAST_HOSTILE_TARGET;
+
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_netherstrand_longbow(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36980;                          //Shoot
+    pAI->Spell[0].Cooldown = 5000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 5000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[1].Enabled = true;
+    pAI->Spell[1].Spell_Id = 36979;                          //Multi-Shot
+    pAI->Spell[1].Cooldown = 20000;
+    pAI->Spell[1].CooldownRandomAddition = 5000;
+    pAI->Spell[1].First_Cast = 10000;
+    pAI->Spell[1].Cast_Target_Type = CAST_HOSTILE_TARGET;
+	
+    pAI->Spell[2].Enabled = true;
+    pAI->Spell[2].Spell_Id = 36994;                          //Blink
+    pAI->Spell[2].Cooldown = 30000;
+    pAI->Spell[2].CooldownRandomAddition = 5000;
+    pAI->Spell[2].First_Cast = 15000;
+    pAI->Spell[2].Cast_Target_Type = CAST_SELF;
+    return pAI;
+}
+
+CreatureAI* GetAI_mob_devastation(Creature* pCreature)
+{
+    SimpleAI* pAI = new SimpleAI (pCreature);
+
+    pAI->Spell[0].Enabled = true;
+    pAI->Spell[0].Spell_Id = 36981;                          //Whirlwind
+    pAI->Spell[0].Cooldown = 15000;
+    pAI->Spell[0].CooldownRandomAddition = 5000;
+    pAI->Spell[0].First_Cast = 8000;
+    pAI->Spell[0].Cast_Target_Type = CAST_HOSTILE_TARGET;
+    return pAI;
+}
+
 CreatureAI* GetAI_boss_kaelthas(Creature* pCreature)
 {
     return new boss_kaelthasAI(pCreature);
@@ -1512,5 +1630,40 @@ void AddSC_boss_kaelthas()
     newscript = new Script;
     newscript->Name = "mob_phoenix_egg_tk";
     newscript->GetAI = &GetAI_mob_phoenix_egg_tk;
+    newscript->RegisterSelf();
+	
+    newscript = new Script;
+    newscript->Name = "mob_phaseshift_bulwark";
+    newscript->GetAI = &GetAI_mob_phaseshift_bulwark;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_warp_slicer";
+    newscript->GetAI = &GetAI_mob_warp_slicer;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_infinity_blades";
+    newscript->GetAI = &GetAI_mob_infinity_blades;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_cosmic_infuser";
+    newscript->GetAI = &GetAI_mob_cosmic_infuser;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_staff_of_disintegration";
+    newscript->GetAI = &GetAI_mob_staff_of_disintegration;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "mob_netherstrand_longbow";
+    newscript->GetAI = &GetAI_mob_netherstrand_longbow;
+    newscript->RegisterSelf();
+	
+    newscript = new Script;
+    newscript->Name = "mob_devastation";
+    newscript->GetAI = &GetAI_mob_devastation;
     newscript->RegisterSelf();
 }

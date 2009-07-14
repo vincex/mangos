@@ -142,16 +142,6 @@ struct MANGOS_DLL_DECL boss_morogrim_tidewalkerAI : public ScriptedAI
                 pSummoned->GetMotionMaster()->MoveFollow(pTarget, 0.0f, 0.0f);
         }
     }
-	
-	void SummonMurloc(float x, float y, float z)
-	{
-		m_creature->SummonCreature(NPC_TIDEWALKER_LURKER, x, y, z, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
-	}
-	
-	void SummonWaterGlobule(float x, float y, float z)
-	{
-		m_creature->SummonCreature(NPC_WATER_GLOBULE, x, y, z, 0, TEMPSUMMON_TIMED_DESPAWN, 30000);
-	}
 
     void UpdateAI(const uint32 uiDiff)
     {
@@ -172,20 +162,19 @@ struct MANGOS_DLL_DECL boss_morogrim_tidewalkerAI : public ScriptedAI
             {
                 DoScriptText(urand(0,1) ? SAY_SUMMON1 : SAY_SUMMON2, m_creature);
 
-                //north
-                SummonMurloc(486.10, -723.64, -7.14);
-                SummonMurloc(482.58, -723.78, -7.14);
-                SummonMurloc(479.38, -723.91, -7.14);
-                SummonMurloc(476.03, -723.86, -7.14);
-                SummonMurloc(472.69, -723.69, -7.14);
-
-                //south
-                SummonMurloc(311.63, -725.04, -13.15);
-                SummonMurloc(307.81, -725.34, -13.15);
-                SummonMurloc(303.91, -725.64, -13.06);
-                SummonMurloc(300.23, -726, -11.89);
-                SummonMurloc(296.82, -726.33, -10.82);
-
+                 //north
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_A6,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_A7,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_A8,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_A9,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_A10,true);
+ 
+                 //south
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_B6,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_B7,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_B8,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_B9,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_MURLOC_B10,true);
                 DoScriptText(EMOTE_EARTHQUAKE, m_creature);
 
                 m_bEarthquake = false;
@@ -239,10 +228,10 @@ struct MANGOS_DLL_DECL boss_morogrim_tidewalkerAI : public ScriptedAI
             {
                 DoScriptText(EMOTE_WATERY_GLOBULES, m_creature);
 
-                SummonWaterGlobule(334.64, -728.89, -14.42);
-                SummonWaterGlobule(365.51, -737.14, -14.44); 	 
-                SummonWaterGlobule(366.19, -709.59, -14.36);
-                SummonWaterGlobule(372.93, -690.96, -14.44);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_GLOBULE_1,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_GLOBULE_2,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_GLOBULE_3,true);
+                m_creature->CastSpell(m_creature,SPELL_SUMMON_GLOBULE_4,false);
 
                 m_uiWateryGlobules_Timer = 25000;
             }else m_uiWateryGlobules_Timer -= uiDiff;
@@ -287,12 +276,13 @@ struct MANGOS_DLL_DECL mob_water_globuleAI : public ScriptedAI
 
         if (m_uiCheck_Timer < uiDiff)
         {
-            if (m_creature->IsWithinDistInMap(m_creature->getVictim(), 5))
+            if (m_creature->IsWithinDistInMap(m_creature->getVictim(), ATTACK_DISTANCE))
             {
                 m_creature->DealDamage(m_creature->getVictim(), 4000+rand()%2000, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_FROST, NULL, false);
 
                 //despawn
-                m_creature->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                m_creature->ForcedDespawn();
+                return;
             }
             m_uiCheck_Timer = 500;
         }else m_uiCheck_Timer -= uiDiff;

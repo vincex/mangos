@@ -61,6 +61,8 @@ struct MANGOS_DLL_DECL boss_curatorAI : public ScriptedAI
         Evocating = false;
 
         m_creature->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_ARCANE, true);
+        m_creature->ApplySpellImmune(0, IMMUNITY_STATE,SPELL_AURA_PERIODIC_MANA_LEECH, true); //drain mana, viper sting, ecc
+        m_creature->ApplySpellImmune(1, IMMUNITY_EFFECT,SPELL_EFFECT_POWER_BURN, true); //mana burn 
     }
 
     void KilledUnit(Unit *victim)
