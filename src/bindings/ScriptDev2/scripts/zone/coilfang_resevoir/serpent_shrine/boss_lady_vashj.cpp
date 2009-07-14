@@ -235,7 +235,6 @@ struct MANGOS_DLL_DECL boss_lady_vashjAI : public ScriptedAI
             {
                 pSummoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 pSummoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                pSummoned->SetVisibility(VISIBILITY_OFF);
             }
 
             //pSummoned->CastSpell(m_creature,SPELL_MAGIC_BARRIER,true);
@@ -696,14 +695,15 @@ struct MANGOS_DLL_DECL mob_shield_generator_channelAI : public ScriptedAI
     }
 
     ScriptedInstance* m_pInstance;                          // the instance
-	uint32 Check_Timer;
+    uint32 Check_Timer;
     bool Casted;
 
     void Reset()
     {
-	    Check_Timer = 0;
+        m_creature->SetUInt32Value(UNIT_FIELD_DISPLAYID , 11686);  //invisible
+        Check_Timer = 0;
         Casted = false;
-	}
+     }
 
     void MoveInLineOfSight(Unit* pWho) { }
 
