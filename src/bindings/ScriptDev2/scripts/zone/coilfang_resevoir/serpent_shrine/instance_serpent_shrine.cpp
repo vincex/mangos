@@ -54,6 +54,9 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
     uint64 m_uiLadyVashj;
     uint64 m_uiKarathress;
     uint64 m_uiKarathressEvent_Starter;
+    uint64 m_uiLeotheras;
+    uint64 m_uiLeotherasEvent_Starter;
+    uint64 m_uiSpellBinder[3];
 
     uint32 m_uiShieldGenerator[MAX_GENERATOR];
     uint32 m_uiEncounter[ENCOUNTERS];
@@ -71,6 +74,11 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
         m_uiLadyVashj = 0;
         m_uiKarathress = 0;
         m_uiKarathressEvent_Starter = 0;
+        m_uiLeotheras = 0;
+        m_uiLeotherasEvent_Starter = 0;
+        m_uiSpellBinder[0]=0;
+        m_uiSpellBinder[1]=0;
+        m_uiSpellBinder[2]=0;
 
         memset(&m_uiShieldGenerator, 0, sizeof(m_uiShieldGenerator));
         memset(&m_uiEncounter, 0, sizeof(m_uiEncounter));
@@ -152,7 +160,7 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                         else if (!pPlayer->HasAura(SCALDING_WATER,0))             //se il pg è in acqua ma l'evento piattaforme è fatto 
                                 pPlayer->CastSpell(pPlayer,SCALDING_WATER,true);  // e il pg non ha l'aura dell'acqua che bolle gliela casto
                     }
-                    else if (pPlayer->HasAura(SCALDING_WATER,0) && !pPlayer->HasUnitMovementFlag(MOVEMENTFLAG_JUMPING)) // se il pg non è in acqua e ha l'aura la tolgo
+                    else if (pPlayer->HasAura(SCALDING_WATER,0) && !pPlayer->HasMovementFlag(MOVEMENTFLAG_JUMPING)) // se il pg non è in acqua e ha l'aura la tolgo
                             pPlayer->RemoveAurasDueToSpell(SCALDING_WATER);												// ma solo se non sta saltando fuori dall'acqua		
                 }
             }			
@@ -170,7 +178,15 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
             case 21965: m_uiTidalvess  = pCreature->GetGUID(); break;
             case 21964: m_uiCaribdis   = pCreature->GetGUID(); break;
             case 21217: m_uiLurker     = pCreature->GetGUID(); break;
+			case 21215: m_uiLeotheras  = pCreature->GetGUID(); break;
             case 21218: m_uiHonorGuardGUID.insert(pCreature->GetGUID()); break; // dovrebbero essere 6 come le piattaforme attorno a lurker
+            case 21806: for(int i=0; i<3; i++)  // dovrebbero essere 3 vicino leotheras
+                            if(m_uiSpellBinder[i]==0) 
+                            {
+                                m_uiSpellBinder[i]=pCreature->GetGUID();
+                                break; 
+                            }
+                            break;
         }
     }
 
@@ -178,6 +194,10 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
     {
         if (uiType == DATA_KARATHRESS_STARTER)
             m_uiKarathressEvent_Starter = uiData;
+        if (uiType == DATA_LEOTHERAS)
+            m_uiLeotheras = uiData;
+        if (uiType == DATA_LEOTHERAS_EVENT_STARTER)
+            m_uiLeotherasEvent_Starter = uiData;
     }
 
     uint64 GetData64(uint32 uiIdentifier)
@@ -192,10 +212,20 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                 return m_uiCaribdis;
             case DATA_LADYVASHJ:
                 return m_uiLadyVashj;
+            case DATA_LEOTHERAS:
+                return m_uiLeotheras;
+            case DATA_LEOTHERAS_EVENT_STARTER:
+                return m_uiLeotherasEvent_Starter;
             case DATA_KARATHRESS:
                 return m_uiKarathress;
             case DATA_KARATHRESS_STARTER:
                 return m_uiKarathressEvent_Starter;
+            case DATA_SPELLBINDER_1:
+                return m_uiSpellBinder[0];
+            case DATA_SPELLBINDER_2:
+                return m_uiSpellBinder[1];
+            case DATA_SPELLBINDER_3:
+                return m_uiSpellBinder[2];
         }
         return 0;
     }

@@ -3,7 +3,7 @@
 --
 
 DELETE FROM sd2_db_version;
-INSERT INTO sd2_db_version (version) VALUES ('ScriptDev2 (for MaNGOS 8015+) ');
+INSERT INTO sd2_db_version (version) VALUES ('ScriptDev2 (for MaNGOS 8078+) ');
 
 --
 -- Below contains data for table `script_texts` mainly used in C++ parts.
@@ -344,7 +344,13 @@ INSERT INTO script_texts (entry,content_default,sound,type,language,emote,commen
 (-1000352, '%s takes the Southfury moonstone and escapes into the river. Follow her!',0,3,0,0,'sprysprocket EMOTE_START'),
 (-1000353, 'Just chill!',0,4,0,0,'sprysprocket SAY_WHISPER_CHILL'),
 (-1000354, 'Stupid grenade picked a fine time to backfire! So much for high quality goblin engineering!',0,1,0,0,'sprysprocket SAY_GRENADE_FAIL'),
-(-1000355, 'All right, you win! I surrender! Just don\'t hurt me!',0,1,0,0,'sprysprocket SAY_END');
+(-1000355, 'All right, you win! I surrender! Just don\'t hurt me!',0,1,0,0,'sprysprocket SAY_END'),
+
+(-1000356,'Okay, okay... gimme a minute to rest now. You gone and beat me up good.',0,0,1,14,'calvin SAY_COMPLETE'),
+
+(-1000357,'Let\'s go before they find out I\'m free!',0,0,0,1,'KAYA_SAY_START'),
+(-1000358,'Look out! We\'re under attack!',0,0,0,0,'KAYA_AMBUSH'),
+(-1000359,'Thank you for helping me. I know my way back from here.',0,0,0,0,'KAYA_END');
 
 -- -1 033 000 SHADOWFANG KEEP
 INSERT INTO script_texts (entry,content_default,sound,type,language,emote,comment) VALUES
@@ -1869,8 +1875,55 @@ INSERT INTO script_texts (entry,content_default,sound,type,language,emote,commen
 -- -1 601 000 AZJOL-NERUB
 
 -- -1 602 000 HALLS OF LIGHTNING
+INSERT INTO script_texts (entry,content_default,sound,type,language,emote,comment) VALUES
+(-1602000,'I am the greatest of my father\'s sons! Your end has come!',14149,1,0,0,'bjarngrim SAY_AGGRO'),
+(-1602001,'So ends your curse!',14153,1,0,0,'bjarngrim SAY_SLAY_1'),
+(-1602002,'Flesh... is... weak!',14154,1,0,0,'bjarngrim SAY_SLAY_2'),
+(-1602003,'...',14155,1,0,0,'bjarngrim SAY_SLAY_3'),
+(-1602004,'How can it be...? Flesh is not... stronger!',14156,1,0,0,'bjarngrim SAY_DEATH'),
+(-1602005,'Defend yourself, for all the good it will do!',14151,1,0,0,'bjarngrim SAY_BATTLE_STANCE'),
+(-1602006,'switches to Battle Stance!',0,3,0,0,'bjarngrim EMOTE_BATTLE_STANCE'),
+(-1602007,'GRAAAAAH! Behold the fury of iron and steel!',14152,1,0,0,'bjarngrim SAY_BERSEKER_STANCE'),
+(-1602008,'switches to Berserker Stance!',0,3,0,0,'bjarngrim EMOTE_BERSEKER_STANCE'),
+(-1602009,'Give me your worst!',14150,1,0,0,'bjarngrim SAY_DEFENSIVE_STANCE'),
+(-1602010,'switches to Defensive Stance!',0,3,0,0,'bjarngrim EMOTE_DEFENSIVE_STANCE'),
 
--- -1 603 000 ULDUAR (RAID NIU)
+(-1602011,'You wish to confront the master? You must weather the storm!',14453,1,0,0,'ionar SAY_AGGRO'),
+(-1602012,'Shocking ... I know!',14456,1,0,0,'ionar SAY_SLAY_1'),
+(-1602013,'You atempt the unpossible.',14457,1,0,0,'ionar SAY_SLAY_2'),
+(-1602014,'Your spark of light is ... extinguish.',14458,1,0,0,'ionar SAY_SLAY_3'),
+(-1602015,'Master... you have guests.',14459,1,0,0,'ionar SAY_DEATH'),
+(-1602016,'The slightest spark shall be your undoing.',14454,1,0,0,'ionar SAY_SPLIT_1'),
+(-1602017,'No one is safe!',14455,1,0,0,'ionar SAY_SPLIT_2'),
+
+(-1602018,'What hope is there for you? None!',14162,1,0,0,'loken SAY_AGGRO0'),
+(-1602019,'I have witnessed the rise and fall of empires. The birth and extinction of entire species. Over countless millennia the foolishness of mortals has remained beyond a constant. Your presence here confirms this.',14160,1,0,0,'loken SAY_INTRO_1'),
+(-1602020,'My master has shown me the future, and you have no place in it. Azeroth will be reborn in darkness. Yogg-Saron shall be released! The Pantheon shall fall!',14162,1,0,0,'loken SAY_INTRO_2'),
+(-1602021,'Only mortal...',14166,1,0,0,'loken SAY_SLAY_1'),
+(-1602022,'I... am... FOREVER!',14167,1,0,0,'loken SAY_SLAY_2'),
+(-1602023,'What little time you had, you wasted!',14168,1,0,0,'loken SAY_SLAY_3'),
+(-1602024,'My death... heralds the end of this world.',14172,1,0,0,'loken SAY_DEATH'),
+(-1602025,'You cannot hide from fate!',14163,1,0,0,'loken SAY_NOVA_1'),
+(-1602026,'Come closer. I will make it quick.',14164,1,0,0,'loken SAY_NOVA_2'),
+(-1602027,'Your flesh cannot hold out for long.',14165,1,0,0,'loken SAY_NOVA_3'),
+(-1602028,'You stare blindly into the abyss!',14169,1,0,0,'loken SAY_75HEALTH'),
+(-1602029,'Your ignorance is profound. Can you not see where this path leads?',14170,1,0,0,'loken SAY_50HEALTH'),
+(-1602030,'You cross the precipice of oblivion!',14171,1,0,0,'loken SAY_25HEALTH'),
+(-1602031,'begins to cast Lightning Nova!',0,3,0,0,'loken EMOTE_NOVA'),
+
+(-1602032,'It is you who have destroyed my children? You... shall... pay!',13960,1,0,0,'volkhan SAY_AGGRO'),
+(-1602033,'The armies of iron will conquer all!',13965, 1,0,0,'volkhan SAY_SLAY_1'),
+(-1602034,'Ha, pathetic!',13966,1,0,0,'volkhan SAY_SLAY_2'),
+(-1602035,'You have cost me too much work!',13967,1,0,0,'volkhan SAY_SLAY_3'),
+(-1602036,'The master was right... to be concerned.',13968,1,0,0,'volkhan SAY_DEATH'),
+(-1602037,'I will crush you beneath my boots!',13963,1,0,0,'volkhan SAY_STOMP_1'),
+(-1602038,'All my work... undone!',13964,1,0,0,'volkhan SAY_STOMP_2'),
+(-1602039,'Life from the lifelessness... death for you.',13961,1,0,0,'volkhan SAY_FORGE_1'),
+(-1602040,'Nothing is wasted in the process. You will see....',13962,1,0,0,'volkhan SAY_FORGE_2'),
+(-1602041,'runs to his anvil!',0,3,0,0,'volkhan EMOTE_TO_ANVIL'),
+(-1602042,'prepares to shatter his Brittle Golems!',0,3,0,0,'volkhan EMOTE_SHATTER');
+
+-- -1 603 000 ULDUAR
 
 -- -1 604 000 GUNDRAK
 
@@ -1894,7 +1947,81 @@ INSERT INTO script_texts (entry,content_default,sound,type,language,emote,commen
 (-1609012,'There is no hope for our future...',0,0,0,0,'unworthy SAY_AGGRO_5'),
 (-1609013,'Sate your hunger on cold steel, $R',0,0,0,0,'unworthy SAY_AGGRO_6'),
 (-1609014,'It ends here!',0,0,0,0,'unworthy SAY_AGGRO_7'),
-(-1609015,'Death is the only cure!',0,0,0,0,'unworthy SAY_AGGRO_8');
+(-1609015,'Death is the only cure!',0,0,0,0,'unworthy SAY_AGGRO_8'),
+
+(-1609016,'No potions!',0,0,0,0,'dk_initiate SAY_DUEL_A'),
+(-1609017,'Remember this day, $n, for it is the day that you will be thoroughly owned.',0,0,0,0,'dk_initiate SAY_DUEL_B'),
+(-1609018,'I\'m going to tear your heart out, cupcake!',0,0,0,0,'dk_initiate SAY_DUEL_C'),
+(-1609019,'Don\'t make me laugh.',0,0,0,0,'dk_initiate SAY_DUEL_D'),
+(-1609020,'Here come the tears...',0,0,0,0,'dk_initiate SAY_DUEL_E'),
+(-1609021,'You have challenged death itself!',0,0,0,0,'dk_initiate SAY_DUEL_F'),
+(-1609022,'The Lich King will see his true champion on this day!',0,0,0,0,'dk_initiate SAY_DUEL_G'),
+(-1609023,'You\'re going down!',0,0,0,0,'dk_initiate SAY_DUEL_H'),
+(-1609024,'You don\'t stand a chance, $n',0,0,0,0,'dk_initiate SAY_DUEL_I'),
+
+(-1609025,'Come to finish the job, have you?',0,0,0,1,'special_surprise SAY_EXEC_START_1'),
+(-1609026,'Come to finish the job, have ye?',0,0,0,1,'special_surprise SAY_EXEC_START_2'),
+(-1609027,'Come ta finish da job, mon?',0,0,0,1,'special_surprise SAY_EXEC_START_3'),
+
+(-1609028,'You\'ll look me in the eyes when...',0,0,0,25,'special_surprise SAY_EXEC_PROG_1'),
+(-1609029,'Well this son o\' Ironforge would like...',0,0,0,25,'special_surprise SAY_EXEC_PROG_2'),
+(-1609030,'Ironic, isn\'t it? To be killed...',0,0,0,25,'special_surprise SAY_EXEC_PROG_3'),
+(-1609031,'If you\'d allow me just one...',0,0,0,25,'special_surprise SAY_EXEC_PROG_4'),
+(-1609032,'I\'d like to stand for...',0,0,0,25,'special_surprise SAY_EXEC_PROG_5'),
+(-1609033,'I want to die like an orc...',0,0,0,25,'special_surprise SAY_EXEC_PROG_6'),
+(-1609034,'Dis troll gonna stand for da...',0,0,0,25,'special_surprise SAY_EXEC_PROG_7'),
+
+(-1609035,'$N?',0,0,0,1,'special_surprise SAY_EXEC_NAME_1'),
+(-1609036,'$N? Mon?',0,0,0,1,'special_surprise SAY_EXEC_NAME_2'),
+
+(-1609037,'$N, I\'d recognize that face anywhere... What... What have they done to you, $N?',0,0,0,1,'special_surprise SAY_EXEC_RECOG_1'),
+(-1609038,'$N, I\'d recognize those face tentacles anywhere... What... What have they done to you, $N?',0,0,0,1,'special_surprise SAY_EXEC_RECOG_2'),
+(-1609039,'$N, I\'d recognize that face anywhere... What... What have they done to ye, $Glad:lass;?',0,0,0,1,'special_surprise SAY_EXEC_RECOG_3'),
+(-1609040,'$N, I\'d recognize that decay anywhere... What... What have they done to you, $N?',0,0,0,1,'special_surprise SAY_EXEC_RECOG_4'),
+(-1609041,'$N, I\'d recognize those horns anywhere... What have they done to you, $N?',0,0,0,1,'special_surprise SAY_EXEC_RECOG_5'),
+(-1609042,'$N, I\'d recognize dem tusks anywhere... What... What have dey done ta you, mon?',0,0,0,1,'special_surprise SAY_EXEC_RECOG_6'),
+
+(-1609043,'You don\'t remember me, do you? Blasted Scourge... They\'ve tried to drain you of everything that made you a righteous force of reckoning. Every last ounce of good... Everything that made you a draenei!',0,0,0,1,'special_surprise SAY_EXEC_NOREM_1'),
+(-1609044,'Ye don\'t remember me, do ye? Blasted Scourge... They\'ve tried to drain ye o\' everything that made ye a righteous force o\' reckoning. Every last ounce o\' good... Everything that made you a $Gson:daughter; of Ironforge!',0,0,0,1,'special_surprise SAY_EXEC_NOREM_2'),
+(-1609045,'You don\'t remember me, do you? We were humans once - long, long ago - until Lordaeron fell to the Scourge. Your transformation to a Scourge zombie came shortly after my own. Not long after that, our minds were freed by the Dark Lady.',0,0,0,1,'special_surprise SAY_EXEC_NOREM_3'),
+(-1609046,'You don\'t remember me, do you? Blasted Scourge... They\'ve tried to drain you of everything that made you a pint-sized force of reckoning. Every last ounce of good... Everything that made you a gnome!',0,0,0,1,'special_surprise SAY_EXEC_NOREM_4'),
+(-1609047,'You don\'t remember me, do you? Blasted Scourge...They\'ve tried to drain of everything that made you a righteous force of reckoning. Every last ounce of good...Everything that made you a human!',0,0,0,1,'special_surprise SAY_EXEC_NOREM_5'),
+(-1609048,'You don\'t remember me? When you were a child your mother would leave you in my care while she served at the Temple of the Moon. I held you in my arms and fed you with honey and sheep\'s milk to calm you until she would return. You were my little angel. Blasted Scourge... What have they done to you, $N?',0,0,0,1,'special_surprise SAY_EXEC_NOREM_6'),
+(-1609049,'You don\'t recognize me, do you? Blasted Scourge... They\'ve tried to drain you of everything that made you a righteous force of reckoning. Every last ounce of good... Everything that made you an orc!',0,0,0,1,'special_surprise SAY_EXEC_NOREM_7'),
+(-1609050,'You don\'t remember me, do you? Blasted Scourge... They\'ve tried to drain you of everything that made you a righteous force of reckoning. Every last ounce of good... Everything that made you a tauren!',0,0,0,1,'special_surprise SAY_EXEC_NOREM_8'),
+(-1609051,'You don\'t remember me, mon? Damn da Scourge! Dey gone ta drain you of everytin dat made ya a mojo masta. Every last ounce of good... Everytin\' dat made ya a troll hero, mon!',0,0,0,1,'special_surprise SAY_EXEC_NOREM_9'),
+
+(-1609052,'A pact was made, $Gbrother:sister;! We vowed vengeance against the Lich King! For what he had done to us! We battled the Scourge as Forsaken, pushing them back into the plaguelands and freeing Tirisfal! You and I were champions of the Forsaken!',0,0,0,1,'special_surprise SAY_EXEC_THINK_1'),
+(-1609053,'You must remember the splendor of life, $Gbrother:sister;. You were a champion of the Kaldorei once! This isn\'t you!',0,0,0,1,'special_surprise SAY_EXEC_THINK_2'),
+(-1609054,'Think, $N. Think back. Try and remember the majestic halls of Silvermoon City, where you were born. Remember the splendor of life, $Gbrother:sister;. You were a champion of the sin\'dorei once! This isn\'t you.',0,0,0,6,'special_surprise SAY_EXEC_THINK_3'),
+(-1609055,'Think, $N. Think back. Try and remember the proud mountains of Argus, where you were born. Remember the splendor of life, $Gbrother:sister;. You were a champion of the draenei once! This isn\'t you.',0,0,0,6,'special_surprise SAY_EXEC_THINK_4'),
+(-1609056,'Think, $N. Think back. Try and remember the snow capped mountains o\' Dun Morogh! Ye were born there, $Glad:lass;. Remember the splendor o\' life, $N! Ye were a champion o\' the dwarves once! This isn\'t ye!',0,0,0,6,'special_surprise SAY_EXEC_THINK_5'),
+(-1609057,'Think, $N. Think back. Try and remember Gnomeregan before those damned troggs! Remember the feel of an [arclight spanner] $Gbrother:sister;. You were a champion of gnome-kind once! This isn\'t you.',0,0,0,6,'special_surprise SAY_EXEC_THINK_6'),
+(-1609058,'Think, $N. Think back. Try and remember the hills and valleys of Elwynn, where you were born. Remember the splendor of life, $Gbrother:sister;. You were a champion of the Alliance once! This isn\'t you.',0,0,0,6,'special_surprise SAY_EXEC_THINK_7'),
+(-1609059,'Think, $N. Think back. Try and remember Durotar, $Gbrother:sister;! Remember the sacrifices our heroes made so that we could be free of the blood curse. Harken back to the Valley of Trials, where we were reborn into a world without demonic influence. We found the splendor of life, $N. Together! This isn\'t you. You were a champion of the Horde once!',0,0,0,6,'special_surprise SAY_EXEC_THINK_8'),
+(-1609060,'Think, $N. Think back. Try and remember the rolling plains of Mulgore, where you were born. Remember the splendor of life, $Gbrother:sister;. You were a champion of the tauren once! This isn\'t you.',0,0,0,6,'special_surprise SAY_EXEC_THINK_9'),
+(-1609061,'TINK $N. Tink back, mon! We be Darkspear, mon! Bruddas and sistas! Remember when we fought the Zalazane and done took he head and freed da Echo Isles? MON! TINK! You was a champion of da Darkspear trolls!',0,0,0,6,'special_surprise SAY_EXEC_THINK_10'),
+
+(-1609062,'Listen to me, $N. You must fight against the Lich King\'s control. He is a monster that wants to see this world - our world - in ruin. Don\'t let him use you to accomplish his goals. You were once a hero and you can be again. Fight, damn you! Fight his control!',0,0,0,5,'special_surprise SAY_EXEC_LISTEN_1'),
+(-1609063,'Listen to me, $N Ye must fight against the Lich King\'s control. He\'s a monster that wants to see this world - our world - in ruin. Don\'t let him use ye to accomplish his goals. Ye were once a hero and ye can be again. Fight, damn ye! Fight his control!',0,0,0,5,'special_surprise SAY_EXEC_LISTEN_2'),
+(-1609064,'Listen to me, $N. You must fight against the Lich King\'s control. He is a monster that wants to see this world - our world - in ruin. Don\'t let him use you to accomplish his goals AGAIN. You were once a hero and you can be again. Fight, damn you! Fight his control!',0,0,0,5,'special_surprise SAY_EXEC_LISTEN_3'),
+(-1609065,'Listen ta me, $Gbrudda:sista;. You must fight against da Lich King\'s control. He be a monstar dat want ta see dis world - our world - be ruined. Don\'t let he use you ta accomplish he goals. You be a hero once and you be a hero again! Fight it, mon! Fight he control!',0,0,0,5,'special_surprise SAY_EXEC_LISTEN_4'),
+
+(-1609066,'What\'s going on in there? What\'s taking so long, $N?',0,1,0,0,'special_surprise SAY_PLAGUEFIST'),
+
+(-1609067,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both. $N... Remember Silvermoon. This world is worth saving!',0,0,0,18,'special_surprise SAY_EXEC_TIME_1'),
+(-1609068,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both. $N... Remember Argus. Don\'t let that happen to this world.',0,0,0,18,'special_surprise SAY_EXEC_TIME_2'),
+(-1609069,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both $N... For KHAAAAAAAAZZZ MODAAAAAANNNNNN!!!',0,0,0,18,'special_surprise SAY_EXEC_TIME_3'),
+(-1609070,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both. $N... Remember Tirisfal! This world is worth saving!',0,0,0,18,'special_surprise SAY_EXEC_TIME_4'),
+(-1609071,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both. $N... Remember Gnomeregan! This world is worth saving.',0,0,0,18,'special_surprise SAY_EXEC_TIME_5'),
+(-1609072,'There... There\'s no more time for me. I\'m done for. FInish me off, $N. Do it or they\'ll kill us both. $N...Remember Elwynn. This world is worth saving.',0,0,0,18,'special_surprise SAY_EXEC_TIME_6'),
+(-1609073,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both. $N... Remember Teldrassil, our beloved home. This world is worth saving.',0,0,0,18,'special_surprise SAY_EXEC_TIME_7'),
+(-1609074,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both. $N... For the Horde! This world is worth saving.',0,0,0,18,'special_surprise SAY_EXEC_TIME_8'),
+(-1609075,'There... There\'s no more time for me. I\'m done for. Finish me off, $N. Do it or they\'ll kill us both. $N... Remember Mulgore. This world is worth saving.',0,0,0,18,'special_surprise SAY_EXEC_TIME_9'),
+(-1609076,'Der... Der\'s no more time for me. I be done for. Finish me off $N. Do it or they\'ll kill us both. $N... Remember Sen\'jin Village, mon! Dis world be worth saving!',0,0,0,18,'special_surprise SAY_EXEC_TIME_10'),
+
+(-1609077,'Do it, $N! Put me out of my misery!',0,0,0,1,'special_surprise SAY_EXEC_WAITING'),
+(-1609078,'dies from his wounds.',0,2,0,0,'special_surprise EMOTE_DIES');
 
 -- -1 615 000 OBSIDIAN SANCTUM
 INSERT INTO script_texts (entry,content_default,sound,type,language,emote,comment) VALUES
@@ -2346,6 +2473,28 @@ INSERT INTO script_waypoint VALUES
 (10096, 3, 601.300781, -198.556992, -53.950256, 0,'ring'),
 (10096, 4, 631.818359, -180.548126, -52.654770, 0,'second gate'),
 (10096, 5, 627.390381, -201.075974, -52.692917, 0,'hiding in corner');
+
+DELETE FROM script_waypoint WHERE entry=11856;
+INSERT INTO script_waypoint VALUES
+(11856, 0, 113.91, -350.13, 4.55, 0, ''),
+(11856, 1, 109.54, -350.08, 3.74, 0, ''),
+(11856, 2, 106.95, -353.40, 3.60, 0, ''),
+(11856, 3, 100.28, -338.89, 2.97, 0, ''),
+(11856, 4, 110.11, -320.26, 3.47, 0, ''),
+(11856, 5, 109.78, -287.80, 5.30, 0, ''),
+(11856, 6, 105.02, -269.71, 4.71, 0, ''),
+(11856, 7, 86.71, -251.81, 5.34, 0, ''),
+(11856, 8, 64.10, -246.38, 5.91, 0, ''),
+(11856, 9, -2.55, -243.58, 6.3, 0, ''),
+(11856, 10, -27.78, -267.53, -1.08, 0, ''),
+(11856, 11, -31.27, -283.54, -4.36, 0, ''),
+(11856, 12, -28.96, -322.44, -9.19, 0, ''),
+(11856, 13, -35.63, -360.03, -16.59, 0, ''),
+(11856, 14, -58.30, -412.26, -30.60, 0, ''),
+(11856, 15, -58.88, -474.17, -44.54, 0, ''),
+(11856, 16, -45.92, -496.57, -46.26, 5000, 'AMBUSH'),
+(11856, 17, -40.25, -510.07, -46.05, 0, ''),
+(11856, 18, -38.88, -520.72, -46.06, 5000, 'END');
 
 DELETE FROM script_waypoint WHERE entry=12423;
 INSERT INTO script_waypoint VALUES

@@ -173,6 +173,7 @@ scripts/zone/coilfang_resevoir/serpent_shrine/boss_fathomlord_karathress.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_hydross_the_unstable.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_lady_vashj.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_leotheras_the_blind.cpp \
+scripts/zone/coilfang_resevoir/serpent_shrine/boss_the_lurker_below.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/boss_morogrim_tidewalker.cpp \
 scripts/zone/coilfang_resevoir/serpent_shrine/def_serpent_shrine.h \
 scripts/zone/coilfang_resevoir/serpent_shrine/instance_serpent_shrine.cpp \
@@ -367,6 +368,7 @@ scripts/zone/tempest_keep/botanica/boss_warp_splinter.cpp \
 scripts/zone/tempest_keep/the_eye/boss_astromancer.cpp \
 scripts/zone/tempest_keep/the_eye/boss_kaelthas.cpp \
 scripts/zone/tempest_keep/the_eye/boss_void_reaver.cpp \
+scripts/zone/tempest_keep/the_eye/boss_alar.cpp \
 scripts/zone/tempest_keep/the_eye/def_the_eye.h \
 scripts/zone/tempest_keep/the_eye/instance_the_eye.cpp \
 scripts/zone/tempest_keep/the_eye/the_eye.cpp \

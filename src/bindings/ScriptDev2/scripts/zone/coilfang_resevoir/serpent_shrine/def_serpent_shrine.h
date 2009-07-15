@@ -15,6 +15,8 @@ enum
     TYPE_THELURKER_EVENT            = 6,
     TYPE_PLATFORM_EVENT             = 7,
 
+    DATA_LEOTHERAS_EVENT_STARTER    = 8,
+    DATA_LEOTHERAS                  = 9,
     DATA_KARATHRESS_STARTER         = 10,
     DATA_KARATHRESS                 = 11,
     DATA_CARIBDIS                   = 12,
@@ -27,6 +29,10 @@ enum
     TYPE_SHIELDGENERATOR1           = 20,
     TYPE_SHIELDGENERATOR2           = 21,
     TYPE_SHIELDGENERATOR3           = 22,
-    TYPE_SHIELDGENERATOR4           = 23
+    TYPE_SHIELDGENERATOR4           = 23,
+
+    DATA_SPELLBINDER_1              = 24,
+    DATA_SPELLBINDER_2              = 25,
+    DATA_SPELLBINDER_3              = 26
 };
 #endif

@@ -66,6 +66,7 @@ enum
 	SPELL_TIDAL_SURGE_DMG           = 38358,
     SPELL_TIDAL_SURGE               = 38353,
     SPELL_HEAL                      = 38330,
+    SPELL_SUMMON_CYCLONE            = 38337,                // summons creature 22104 which uses spell 29538
 
     MAX_ADVISORS                    = 3,
 
@@ -274,13 +275,19 @@ struct MANGOS_DLL_DECL boss_fathomguard_sharkkisAI : public ScriptedAI
     uint32 m_uiLeechingThrow_Timer;
     uint32 m_uiTheBeastWithin_Timer;
 	uint32 m_uiMultishot_Timer;
+    uint32 m_uiPet_Timer;
+	
+    bool m_bIsPetCheckNeeded;
 
     void Reset()
     {
         m_uiHurlTrident_Timer    = 2500;
         m_uiLeechingThrow_Timer  = 20000;
         m_uiTheBeastWithin_Timer = 30000;
-		m_uiMultishot_Timer = 5000;
+		m_uiMultishot_Timer      = 5000;
+		m_uiPet_Timer            = 10000;
+
+        m_bIsPetCheckNeeded      = true;
 
         if (m_pInstance)
             m_pInstance->SetData(TYPE_KARATHRESS_EVENT, NOT_STARTED);
@@ -319,6 +326,21 @@ struct MANGOS_DLL_DECL boss_fathomguard_sharkkisAI : public ScriptedAI
         if (Creature* pKarathress = (Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KARATHRESS)))
             ((boss_fathomlord_karathressAI*)pKarathress->AI())->EventAdvisorDeath(DATA_SHARKKIS);
     }
+	
+    void JustSummoned(Creature* pSummoned)
+    {
+        if (pSummoned->isPet())
+        {
+            m_uiPet_Timer = 10000;
+            m_bIsPetCheckNeeded = false;
+        }
+    }
+
+    void SummonedCreatureDespawn(Creature* pDespawned)
+    {
+        if (pDespawned->isPet())
+            m_bIsPetCheckNeeded = true;
+    }
 
     void UpdateAI(const uint32 uiDiff)
     {
@@ -340,9 +362,15 @@ struct MANGOS_DLL_DECL boss_fathomguard_sharkkisAI : public ScriptedAI
             return;
         }
 
-        //spawn pet if not exist
-        if (!m_creature->GetPetGUID())
-            DoCast(m_creature, urand(0,1) ? SPELL_SUMMON_FATHOM_LURKER : SPELL_SUMMON_FATHOM_SPOREBAT);
+        //after 10 seconds: spawn pet if not exist
+        if (m_bIsPetCheckNeeded)
+        {
+            if (m_uiPet_Timer < uiDiff)
+            {
+                if (!m_creature->GetPet())
+                    DoCast(m_creature, urand(0,1) ? SPELL_SUMMON_FATHOM_LURKER : SPELL_SUMMON_FATHOM_SPOREBAT);
+            }else m_uiPet_Timer -= uiDiff;			
+        }
 
         //m_uiHurlTrident_Timer
         if (m_uiHurlTrident_Timer < uiDiff)
