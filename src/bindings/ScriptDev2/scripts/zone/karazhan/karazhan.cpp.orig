@@ -153,6 +153,16 @@ struct MANGOS_DLL_DECL npc_barnesAI : public npc_escortAI
 
             if (GameObject* pCurtain = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_CURTAINS)))
                 pCurtain->SetGoState(GO_STATE_READY);
+
+            if(m_pInstance->GetData(DATA_OPERA_EVENT)==DONE)
+            {
+              if (GameObject* rDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORRIGHT)))
+                   rDoor->SetGoState(GO_STATE_ACTIVE);
+              if (GameObject* pDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORLEFT)))
+                   pDoor->SetGoState(GO_STATE_ACTIVE);
+              if (GameObject* pCurtain = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_CURTAINS)))
+                   pCurtain->SetGoState(GO_STATE_ACTIVE);
+            }
         }
     }
 
@@ -282,7 +292,8 @@ struct MANGOS_DLL_DECL npc_barnesAI : public npc_escortAI
                     RaidWiped = true;
                     for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
                     {
-                        if (i->getSource()->isAlive() && !i->getSource()->isGameMaster())
+
+                        if (i->getSource()->isAlive() && !i->getSource()->isGameMaster() && !i->getSource()->HasAura(1787) && !i->getSource()->HasAura(5384))
                         {
                             RaidWiped = false;
                             break;
@@ -291,8 +302,14 @@ struct MANGOS_DLL_DECL npc_barnesAI : public npc_escortAI
 
                     if (RaidWiped)
                     {
+                        debug_log("SD2: Opera Event - Raid Wiped");
                         RaidWiped = true;
                         EnterEvadeMode();
+
+                        if (GameObject* pDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORLEFT)))
+                            pDoor->SetGoState(GO_STATE_ACTIVE);
+ 	                     if (GameObject* pCurtain = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_CURTAINS)))
+                            pCurtain->SetGoState(GO_STATE_ACTIVE);
                     }
 
                     WipeTimer = 15000;
@@ -349,7 +366,7 @@ struct MANGOS_DLL_DECL npc_barnesAI : public npc_escortAI
             uint32 entry = ((uint32)Spawns[index][0]);
             float PosX = Spawns[index][1];
 
-            if (Creature* pCreature = m_creature->SummonCreature(entry, PosX, SPAWN_Y, SPAWN_Z, SPAWN_O, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 120000))
+            if (Creature* pCreature = m_creature->SummonCreature(entry, PosX, SPAWN_Y, SPAWN_Z, SPAWN_O, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 300000))
             {
                 // In case database has bad flags
                 pCreature->SetUInt32Value(UNIT_FIELD_FLAGS, 0);
@@ -378,7 +395,7 @@ bool GossipHello_npc_barnes(Player* pPlayer, Creature* pCreature)
     ScriptedInstance* pInstance = ((ScriptedInstance*)pCreature->GetInstanceData());
 
     // Check for death of Moroes
-    if (pInstance && (pInstance->GetData(DATA_MOROES_EVENT) >= DONE))
+    if (pInstance->GetData(DATA_MOROES_EVENT) == DONE && pInstance->GetData(DATA_OPERA_EVENT) != DONE )
     {
         pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, OZ_GOSSIP1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
 
@@ -443,7 +460,7 @@ bool GossipHello_npc_berthold(Player* pPlayer, Creature* pCreature)
 {
     ScriptedInstance* pInstance = ((ScriptedInstance*)pCreature->GetInstanceData());
                                                             // Check if Shade of Aran is dead or not
-    if (pInstance && (pInstance->GetData(DATA_SHADEOFARAN_EVENT) >= DONE))
+   	if(pInstance->GetData(DATA_SHADEOFARAN_EVENT) == DONE )
         pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_TELEPORT, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
 
     pPlayer->SEND_GOSSIP_MENU(pCreature->GetNpcTextId(), pCreature->GetGUID());
