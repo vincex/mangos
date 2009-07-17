@@ -200,7 +200,7 @@ struct MANGOS_DLL_DECL boss_dorotheeAI : public ScriptedAI
             else SummonTitoTimer -= diff;
         }
 
-        DoMeleeAttackIfReady();
+        //DoMeleeAttackIfReady();
     }
 };
 
@@ -311,15 +311,8 @@ struct MANGOS_DLL_DECL boss_strawmanAI : public ScriptedAI
 
     void SpellHit(Unit* caster, const SpellEntry *Spell)
     {
-        if ((Spell->SchoolMask == SPELL_SCHOOL_MASK_FIRE) && (!(rand()%10)))
-        {
-            /*
-                if (not direct damage(aoe,dot))
-                    return;
-            */
-
+        if (Spell->SchoolMask == SPELL_SCHOOL_MASK_FIRE && rand()%2 == 1 )
             DoCast(m_creature, SPELL_BURNING_STRAW, true);
-        }
     }
 
     void JustDied(Unit* killer)

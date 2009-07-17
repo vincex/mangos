@@ -110,12 +110,12 @@ struct MANGOS_DLL_DECL boss_nightbaneAI : public ScriptedAI
         Wait = false;
         InCombat = false;
 
-        if(pInstance->GetData(DATA_NIGHTBANE_EVENT) == DONE || pInstance->GetData(DATA_NIGHTBANE_EVENT) == IN_PROGRESS)
+        if(pInstance->GetData(TYPE_NIGHTBANE) == DONE || pInstance->GetData(TYPE_NIGHTBANE) == IN_PROGRESS)
 	     {
 	     m_creature->DealDamage(m_creature, m_creature->GetMaxHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
  	     m_creature->RemoveCorpse();
         }  
-        pInstance->SetData(DATA_NIGHTBANE_EVENT, NOT_STARTED);
+        pInstance->SetData(TYPE_NIGHTBANE, NOT_STARTED);
 
         m_creature->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_INTERRUPT_CAST, true);
         m_creature->ApplySpellImmune(0, IMMUNITY_MECHANIC, SPELL_AURA_MOD_TAUNT, true);
@@ -125,14 +125,14 @@ struct MANGOS_DLL_DECL boss_nightbaneAI : public ScriptedAI
     {
         DoPlaySoundToSet(m_creature, SOUND_DEATH);
         if(pInstance)
-            pInstance->SetData(DATA_NIGHTBANE_EVENT, 3); // Completed
+            pInstance->SetData(TYPE_NIGHTBANE, 3); // Completed
     }
 
     void Aggro(Unit *who)
     {
         DoPlaySoundToSet(m_creature, SOUND_AGGRO);
         if(pInstance)
-            pInstance->SetData(DATA_NIGHTBANE_EVENT, 1);
+            pInstance->SetData(TYPE_NIGHTBANE, 1);
         InCombat = true;
     }
 

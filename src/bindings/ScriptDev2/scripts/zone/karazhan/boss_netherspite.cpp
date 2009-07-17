@@ -191,7 +191,7 @@ struct MANGOS_DLL_DECL boss_netherspiteAI : public ScriptedAI {
 		 DestroyVoidZone();
 
         // open the door  
-        if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GAMEOBJECT_MASSIVE_DOOR)))
+        if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GO_MASSIVE_DOOR)))
             pDoor->SetGoState(GO_STATE_ACTIVE); 
     }
 
@@ -886,7 +886,7 @@ struct MANGOS_DLL_DECL boss_netherspiteAI : public ScriptedAI {
             return;
 
         // open the door  
-        if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GAMEOBJECT_MASSIVE_DOOR)))
+        if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GO_MASSIVE_DOOR)))
             pDoor->SetGoState(GO_STATE_ACTIVE); 
 
         if(!m_creature->getVictim() || !m_creature->isAlive())
@@ -1145,7 +1145,7 @@ struct MANGOS_DLL_DECL boss_netherspiteAI : public ScriptedAI {
 		bReset = true;
 
         // open the door  
-        if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GAMEOBJECT_MASSIVE_DOOR)))
+        if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GO_MASSIVE_DOOR)))
             pDoor->SetGoState(GO_STATE_ACTIVE); 
     }
 };

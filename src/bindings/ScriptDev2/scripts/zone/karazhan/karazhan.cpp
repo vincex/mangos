@@ -295,7 +295,7 @@ struct MANGOS_DLL_DECL npc_barnesAI : public npc_escortAI
                     RaidWiped = true;
                     for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
                     {
-                        if (i->getSource()->isAlive() && !i->getSource()->isGameMaster())
+                        if (i->getSource()->isAlive() && !i->getSource()->isGameMaster() && !i->getSource()->HasAura(1787) && !i->getSource()->HasAura(5384))
                         {
                             RaidWiped = false;
                             break;
@@ -304,11 +304,13 @@ struct MANGOS_DLL_DECL npc_barnesAI : public npc_escortAI
 
                     if (RaidWiped)
                     {
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_STAGEDOORLEFT));
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_CURTAINS));
                         RaidWiped = true;
                         EnterEvadeMode();
                     }
 
-                    WipeTimer = 15000;
+                    WipeTimer = 5000;
                 }else WipeTimer -= diff;
             }
         }

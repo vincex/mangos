@@ -218,8 +218,8 @@ struct MANGOS_DLL_DECL boss_malchezaarAI : public ScriptedAI
 		
          if (pInstance)
         {
-            pInstance->SetData(DATA_MALCHEZZAR_EVENT, NOT_STARTED);
-            if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GAMEOBJECT_NETHER_DOOR)))
+            pInstance->SetData(TYPE_MALCHEZZAR, NOT_STARTED);
+            if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GO_NETHER_DOOR)))
                 pDoor->SetGoState(GO_STATE_ACTIVE);
         }
 
@@ -249,8 +249,8 @@ struct MANGOS_DLL_DECL boss_malchezaarAI : public ScriptedAI
 
         if (pInstance)
         {
-            pInstance->SetData(DATA_MALCHEZZAR_EVENT, DONE);
-            if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GAMEOBJECT_NETHER_DOOR)))
+            pInstance->SetData(TYPE_MALCHEZZAR, DONE);
+            if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GO_NETHER_DOOR)))
                 pDoor->SetGoState(GO_STATE_ACTIVE);
         }
 
@@ -262,8 +262,8 @@ struct MANGOS_DLL_DECL boss_malchezaarAI : public ScriptedAI
 
         if (pInstance)
         {
-            pInstance->SetData(DATA_MALCHEZZAR_EVENT, IN_PROGRESS);
-            if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GAMEOBJECT_NETHER_DOOR)))
+            pInstance->SetData(TYPE_MALCHEZZAR, IN_PROGRESS);
+            if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_GO_NETHER_DOOR)))
                 pDoor->SetGoState(GO_STATE_READY);
         }
     }

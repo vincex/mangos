@@ -138,6 +138,8 @@ struct MANGOS_DLL_DECL boss_aranAI : public ScriptedAI
         Drinking = false;
         DrinkInturrupted = false;
 
+        m_creature->ApplySpellImmune(0, IMMUNITY_STATE,SPELL_AURA_HASTE_SPELLS, true);
+
         if (m_pInstance)
         {
             // Not in progress
