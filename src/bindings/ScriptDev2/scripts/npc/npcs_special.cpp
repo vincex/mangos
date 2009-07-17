@@ -452,7 +452,12 @@ struct MANGOS_DLL_DECL npc_doctorAI : public ScriptedAI
         PatientDiedCount = 0;
         PatientSavedCount = 0;
 
+        Patients.clear();
+        Coordinates.clear();
+
         Event = false;
+
+        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
     }
 
     void BeginEvent(Player* pPlayer);
@@ -529,8 +534,9 @@ struct MANGOS_DLL_DECL npc_injured_patientAI : public ScriptedAI
                 case 2: DoScriptText(SAY_DOC3,m_creature); break;
             }
 
+            m_creature->RemoveMonsterMoveFlag(MONSTER_MOVE_WALK);
+
             uint32 mobId = m_creature->GetEntry();
-            m_creature->RemoveUnitMovementFlag(MONSTER_MOVE_WALK);
 
             switch (mobId)
             {
@@ -546,7 +552,6 @@ struct MANGOS_DLL_DECL npc_injured_patientAI : public ScriptedAI
                     break;
             }
         }
-        return;
     }
 
     void UpdateAI(const uint32 diff)
@@ -613,7 +618,8 @@ void npc_doctorAI::PatientDied(Location* Point)
 
     if (pPlayer && ((pPlayer->GetQuestStatus(6624) == QUEST_STATUS_INCOMPLETE) || (pPlayer->GetQuestStatus(6622) == QUEST_STATUS_INCOMPLETE)))
     {
-        PatientDiedCount++;
+        ++PatientDiedCount;
+
         if (PatientDiedCount > 5 && Event)
         {
             if (pPlayer->GetQuestStatus(6624) == QUEST_STATUS_INCOMPLETE)
@@ -621,13 +627,15 @@ void npc_doctorAI::PatientDied(Location* Point)
             else if (pPlayer->GetQuestStatus(6622) == QUEST_STATUS_INCOMPLETE)
                 pPlayer->FailQuest(6622);
 
-            Event = false;
-            m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             Reset();
+            return;
         }
 
         Coordinates.push_back(Point);
     }
+    else
+        // If no player or player abandon quest in progress
+        Reset();
 }
 
 void npc_doctorAI::PatientSaved(Creature* soldier, Player* pPlayer, Location* Point)
@@ -636,7 +644,8 @@ void npc_doctorAI::PatientSaved(Creature* soldier, Player* pPlayer, Location* Po
     {
         if ((pPlayer->GetQuestStatus(6624) == QUEST_STATUS_INCOMPLETE) || (pPlayer->GetQuestStatus(6622) == QUEST_STATUS_INCOMPLETE))
         {
-            PatientSavedCount++;
+            ++PatientSavedCount;
+
             if (PatientSavedCount == 15)
             {
                 if (!Patients.empty())
@@ -654,9 +663,8 @@ void npc_doctorAI::PatientSaved(Creature* soldier, Player* pPlayer, Location* Po
                 else if (pPlayer->GetQuestStatus(6622) == QUEST_STATUS_INCOMPLETE)
                     pPlayer->AreaExploredOrEventHappens(6622);
 
-                Event = false;
-                m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 Reset();
+                return;
             }
 
             Coordinates.push_back(Point);
@@ -668,9 +676,8 @@ void npc_doctorAI::UpdateAI(const uint32 diff)
 {
     if (Event && SummonPatientCount >= 20)
     {
-        Event = false;
-        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         Reset();
+        return;
     }
 
     if (Event)
@@ -701,6 +708,9 @@ void npc_doctorAI::UpdateAI(const uint32 diff)
 
             if (Patient)
             {
+                //303, this flag appear to be required for client side item->spell to work (TARGET_SINGLE_FRIEND)
+                //Patient->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
+
                 Patients.push_back(Patient->GetGUID());
                 ((npc_injured_patientAI*)Patient->AI())->Doctorguid = m_creature->GetGUID();
 
