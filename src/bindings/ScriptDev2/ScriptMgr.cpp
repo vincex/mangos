@@ -51,6 +51,7 @@ extern void AddSC_boss_ysondre();
 extern void AddSC_generic_creature();
 
 // -- Custom --
+extern void AddSC_boss_najentus_gdr();
 
 // -- Examples --
 extern void AddSC_example_creature();
@@ -950,6 +951,8 @@ void ScriptsInit()
     AddSC_generic_creature();
 
     // -- Custom --
+    AddSC_boss_najentus_gdr();
+
 
     // -- Examples --
     AddSC_example_creature();
