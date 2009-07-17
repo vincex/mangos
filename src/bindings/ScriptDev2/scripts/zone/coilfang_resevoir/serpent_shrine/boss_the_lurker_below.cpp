@@ -26,7 +26,7 @@ EndScriptData */
 
 enum
 {
-    SAY_SPOUT                       = -1549000,
+    EMOTE_SPOUT                     = -1549000,
 
     SPELL_SPOUT                     = 37433,
     SPELL_SPOUT_ANIM                = 42835,
@@ -110,7 +110,6 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
     {
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         m_creature->SetFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_SUBMERGED);
-        //m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
         m_creature->setFaction(35);
         
         WhirlTimer     = rand()%5000 + 15000;
@@ -178,10 +177,10 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
     }
 
     void Rotate(const uint32 diff)  //20secs for 360turn
-    {
-		if(RotType==NOROTATE) 
+    {    
+        if(RotType==NOROTATE) 
 		    return;
-
+            
         m_creature->SetUInt64Value(UNIT_FIELD_TARGET, 0); //no target if rotating!
         if(RotType=CLOCKWISE)
         {
@@ -198,9 +197,8 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
         
         if(RotTimer<diff)//end rotate
         {
-            RotType = NOROTATE;//set norotate state
-            RotTimer=20000;
             m_creature->InterruptNonMeleeSpells(false);
+            RotType = NOROTATE;//set norotate state
             WhirlTimer = 2000; //whirl directly after spout ends
             return;
         }else RotTimer-=diff;
@@ -219,7 +217,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
             {
                 Player *pPlayer = i->getSource();
                 if(pPlayer && pPlayer->isAlive() && m_creature->HasInArc((double)diff/20000*(double)M_PI*2,pPlayer) && m_creature->GetDistance(pPlayer) <= SPOUT_DIST && !pPlayer->IsInWater())
-                    DoCast(pPlayer,SPELL_SPOUT,true);//only knock back palyers in arc, in 100yards, not in water
+                    DoCast(pPlayer,SPELL_SPOUT,true);//only knock back players in arc, in 100yards, not in water
              }
         }
     }    
@@ -231,11 +229,11 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
             case 0: RotType = CLOCKWISE; break;
             case 1: RotType = COUNTERCLOCKWISE; break;
         }
-        RotTimer=20000;
         if(pVictim)
             SpoutAngle = m_creature->GetAngle(pVictim);
-        //DoCast(m_creature,SPELL_SPOUT_BREATH);//take breath anim
-        DoScriptText(SAY_SPOUT, m_creature);
+        RotTimer=20000;    
+        DoScriptText(EMOTE_SPOUT, m_creature);    
+        DoCast(m_creature,SPELL_SPOUT_BREATH);//take breath anim
     }
 
     void UpdateAI(const uint32 diff)
@@ -278,7 +276,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
                 {
                     DoCast(m_creature,SPELL_WHIRL);
                     WhirlTimer = rand()%5000 + 15000;
-                    WaterboltTimer += 5000;//add 5secs to waterbolt timer, to add some time to run back to boss
+                    WaterboltTimer += 3000;//add 3secs to waterbolt timer, to add some time to run back to boss
                 }else WhirlTimer -= diff;
 
                 if(GeyserTimer < diff)
@@ -310,7 +308,7 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
                     {
                         DoCast(m_creature->getVictim(),SPELL_WATERBOLT);
                         WaterboltTimer = 3000;
-                    } //else DoMeleeAttackIfReady();
+                    }
                 }else WaterboltTimer -= diff;
                 
                 DoMeleeAttackIfReady();
