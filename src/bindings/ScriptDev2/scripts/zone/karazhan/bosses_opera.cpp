@@ -89,13 +89,13 @@ EndScriptData */
 void SummonCroneIfReady(ScriptedInstance* pInstance, Creature* pCreature)
 {
     pInstance->SetData(DATA_OPERA_OZ_DEATHCOUNT, SPECIAL);  // Increment DeathCount
+
     if (pInstance->GetData(DATA_OPERA_OZ_DEATHCOUNT) == 4)
     {
-        Creature* Crone = pCreature->SummonCreature(CREATURE_CRONE, -10891.96, -1755.95, pCreature->GetPositionZ(), 4.64, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 300000);
-        if (Crone)
+        if (Creature* pCrone = pCreature->SummonCreature(CREATURE_CRONE, -10891.96, -1755.95, pCreature->GetPositionZ(), 4.64, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILISECONDS))
         {
             if (pCreature->getVictim())
-                Crone->AI()->AttackStart(pCreature->getVictim());
+                pCrone->AI()->AttackStart(pCreature->getVictim());
         }
     }
 };
@@ -134,6 +134,11 @@ struct MANGOS_DLL_DECL boss_dorotheeAI : public ScriptedAI
     void Aggro(Unit* who)
     {
         DoScriptText(SAY_DOROTHEE_AGGRO, m_creature);
+    }
+
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
     }
 
     void SummonTito();                                      // See below
@@ -195,7 +200,7 @@ struct MANGOS_DLL_DECL boss_dorotheeAI : public ScriptedAI
             else SummonTitoTimer -= diff;
         }
 
-        //DoMeleeAttackIfReady();
+        DoMeleeAttackIfReady();
     }
 };
 
@@ -299,10 +304,22 @@ struct MANGOS_DLL_DECL boss_strawmanAI : public ScriptedAI
         DoScriptText(SAY_STRAWMAN_AGGRO, m_creature);
     }
 
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
+    }
+
     void SpellHit(Unit* caster, const SpellEntry *Spell)
     {
-        if (Spell->SchoolMask == SPELL_SCHOOL_MASK_FIRE)
-           if (rand()%2 == 1 )  DoCast(m_creature, SPELL_BURNING_STRAW, true);
+        if ((Spell->SchoolMask == SPELL_SCHOOL_MASK_FIRE) && (!(rand()%10)))
+        {
+            /*
+                if (not direct damage(aoe,dot))
+                    return;
+            */
+
+            DoCast(m_creature, SPELL_BURNING_STRAW, true);
+        }
     }
 
     void JustDied(Unit* killer)
@@ -376,6 +393,11 @@ struct MANGOS_DLL_DECL boss_tinheadAI : public ScriptedAI
     void Aggro(Unit* who)
     {
         DoScriptText(SAY_TINHEAD_AGGRO, m_creature);
+    }
+
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
     }
 
     void AttackStart(Unit* who)
@@ -486,6 +508,11 @@ struct MANGOS_DLL_DECL boss_roarAI : public ScriptedAI
         DoScriptText(SAY_ROAR_AGGRO, m_creature);
     }
 
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
+    }
+
     void JustDied(Unit* killer)
     {
         DoScriptText(SAY_ROAR_DEATH, m_creature);
@@ -554,6 +581,11 @@ struct MANGOS_DLL_DECL boss_croneAI : public ScriptedAI
         ChainLightningTimer = 10000;
     }
 
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
+    }
+
     void Aggro(Unit* who)
     {
         switch(rand()%2)
@@ -572,11 +604,11 @@ struct MANGOS_DLL_DECL boss_croneAI : public ScriptedAI
 
         if (m_pInstance)
         {
-            m_pInstance->SetData(DATA_OPERA_EVENT, DONE);
+            m_pInstance->SetData(TYPE_OPERA, DONE);
 
-            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORLEFT)))
+            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORLEFT)))
                 pLDoor->SetGoState(GO_STATE_ACTIVE);
-            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORRIGHT)))
+            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORRIGHT)))
                 pRDoor->SetGoState(GO_STATE_ACTIVE);
             if (GameObject* pSideEntrance = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_SIDE_ENTRANCE_DOOR)))
                 pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
@@ -709,17 +741,10 @@ bool GossipSelect_npc_grandmother(Player* pPlayer, Creature* pCreature, uint32 s
 {
     if (action == GOSSIP_ACTION_INFO_DEF)
     {
-        pCreature->SetVisibility(VISIBILITY_OFF);
-        float x,y,z;
-        pCreature->GetPosition(x,y,z);
-        Creature* BigBadWolf = pCreature->SummonCreature(CREATURE_BIG_BAD_WOLF, x, y, z, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 300000);
-        if (BigBadWolf)
-        {
-            BigBadWolf->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            BigBadWolf->AI()->AttackStart(pPlayer);
-        }
+        if (Creature* pBigBadWolf = pCreature->SummonCreature(CREATURE_BIG_BAD_WOLF, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILISECONDS))
+            pBigBadWolf->AI()->AttackStart(pPlayer);
 
-        pCreature->setDeathState(JUST_DIED);
+        pCreature->ForcedDespawn();
     }
 
     return true;
@@ -761,17 +786,22 @@ struct MANGOS_DLL_DECL boss_bigbadwolfAI : public ScriptedAI
         DoScriptText(SAY_WOLF_AGGRO, m_creature);
     }
 
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
+    }
+
     void JustDied(Unit* killer)
     {
         DoPlaySoundToSet(m_creature, SOUND_WOLF_DEATH);
 
         if (m_pInstance)
         {
-            m_pInstance->SetData(DATA_OPERA_EVENT, DONE);
+            m_pInstance->SetData(TYPE_OPERA, DONE);
 
-            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORLEFT)))
+            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORLEFT)))
                 pLDoor->SetGoState(GO_STATE_ACTIVE);
-            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORRIGHT)))
+            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORRIGHT)))
                 pRDoor->SetGoState(GO_STATE_ACTIVE);
             if (GameObject* pSideEntrance = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_SIDE_ENTRANCE_DOOR)))
                 pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
@@ -925,6 +955,7 @@ struct MANGOS_DLL_DECL boss_julianneAI : public ScriptedAI
         m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         EntryYellTimer = 1000;
         AggroYellTimer = 10000;
+        IsFakingDeath = false;
         Reset();
     }
 
@@ -951,15 +982,6 @@ struct MANGOS_DLL_DECL boss_julianneAI : public ScriptedAI
 
     void Reset()
     {
-        if (RomuloGUID)
-        {
-            if (Unit* Romulo = Unit::GetUnit(*m_creature, RomuloGUID))
-            {
-                Romulo->SetVisibility(VISIBILITY_OFF);
-                Romulo->DealDamage(Romulo, Romulo->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-            }
-        }
-
         RomuloGUID = 0;
         Phase = PHASE_JULIANNE;
 
@@ -973,9 +995,11 @@ struct MANGOS_DLL_DECL boss_julianneAI : public ScriptedAI
         ResurrectSelfTimer = 0;
 
         if (IsFakingDeath)
+        {
             Resurrect(m_creature);
+            IsFakingDeath = false;
+        }
 
-        IsFakingDeath = false;
         SummonedRomulo = false;
         RomuloDead = false;
     }
@@ -996,6 +1020,11 @@ struct MANGOS_DLL_DECL boss_julianneAI : public ScriptedAI
         ScriptedAI::MoveInLineOfSight(who);
     }
 
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
+    }
+
     void SpellHit(Unit* caster, const SpellEntry *Spell)
     {
         if (Spell->Id == SPELL_DRINK_POISON)
@@ -1013,11 +1042,11 @@ struct MANGOS_DLL_DECL boss_julianneAI : public ScriptedAI
 
         if (m_pInstance)
         {
-            m_pInstance->SetData(DATA_OPERA_EVENT, DONE);
+            m_pInstance->SetData(TYPE_OPERA, DONE);
 
-            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORLEFT)))
+            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORLEFT)))
                 pLDoor->SetGoState(GO_STATE_ACTIVE);
-            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORRIGHT)))
+            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORRIGHT)))
                 pRDoor->SetGoState(GO_STATE_ACTIVE);
             if (GameObject* pSideEntrance = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_SIDE_ENTRANCE_DOOR)))
                 pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
@@ -1073,6 +1102,11 @@ struct MANGOS_DLL_DECL boss_romuloAI : public ScriptedAI
         JulianneDead = false;
     }
 
+    void JustReachedHome()
+    {
+        m_creature->ForcedDespawn();
+    }
+
     void DamageTaken(Unit* done_by, uint32 &damage);
 
     void Aggro(Unit* who)
@@ -1103,11 +1137,11 @@ struct MANGOS_DLL_DECL boss_romuloAI : public ScriptedAI
 
         if (m_pInstance)
         {
-            m_pInstance->SetData(DATA_OPERA_EVENT, DONE);
+            m_pInstance->SetData(TYPE_OPERA, DONE);
 
-            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORLEFT)))
+            if (GameObject* pLDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORLEFT)))
                 pLDoor->SetGoState(GO_STATE_ACTIVE);
-            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GAMEOBJECT_STAGEDOORRIGHT)))
+            if (GameObject* pRDoor = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_STAGEDOORRIGHT)))
                 pRDoor->SetGoState(GO_STATE_ACTIVE);
             if (GameObject* pSideEntrance = m_pInstance->instance->GetGameObject(m_pInstance->GetData64(DATA_GO_SIDE_ENTRANCE_DOOR)))
                 pSideEntrance->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
@@ -1275,14 +1309,15 @@ void boss_julianneAI::UpdateAI(const uint32 diff)
     {
         if (SummonRomuloTimer < diff)
         {
-            Creature* Romulo = m_creature->SummonCreature(CREATURE_ROMULO, ROMULO_X, ROMULO_Y, m_creature->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 600000);
-            if (Romulo)
+            if (Creature* pRomulo = m_creature->SummonCreature(CREATURE_ROMULO, ROMULO_X, ROMULO_Y, m_creature->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILISECONDS))
             {
-                RomuloGUID = Romulo->GetGUID();
-                ((boss_romuloAI*)Romulo->AI())->JulianneGUID = m_creature->GetGUID();
-                ((boss_romuloAI*)Romulo->AI())->Phase = PHASE_ROMULO;
-                Romulo->setFaction(16);
-                Romulo->SetInCombatWithZone();
+                RomuloGUID = pRomulo->GetGUID();
+                ((boss_romuloAI*)pRomulo->AI())->JulianneGUID = m_creature->GetGUID();
+                ((boss_romuloAI*)pRomulo->AI())->Phase = PHASE_ROMULO;
+                pRomulo->SetInCombatWithZone();
+
+                //why?
+                pRomulo->setFaction(16);
             }
             SummonedRomulo = true;
         }else SummonRomuloTimer -= diff;

@@ -205,7 +205,7 @@ struct MANGOS_DLL_DECL boss_terestianAI : public ScriptedAI
         ReSummon            = false;
 
         if (m_pInstance)
-            m_pInstance->SetData(DATA_TERESTIAN_EVENT, NOT_STARTED);
+            m_pInstance->SetData(TYPE_TERESTIAN, NOT_STARTED);
     }
 
     void Aggro(Unit* who)
@@ -224,8 +224,10 @@ struct MANGOS_DLL_DECL boss_terestianAI : public ScriptedAI
             if (Kilrek && !Kilrek->getVictim())
                 Kilrek->AddThreat(who, 0.0f);
 
-            m_pInstance->SetData(DATA_TERESTIAN_EVENT, IN_PROGRESS);
-        } else ERROR_INST_DATA(m_creature);
+            m_pInstance->SetData(TYPE_TERESTIAN, IN_PROGRESS);
+        }
+        else
+            ERROR_INST_DATA(m_creature);
     }
 
     void KilledUnit(Unit *victim)
@@ -253,7 +255,7 @@ struct MANGOS_DLL_DECL boss_terestianAI : public ScriptedAI
         DoScriptText(SAY_DEATH, m_creature);
 
         if (m_pInstance)
-            m_pInstance->SetData(DATA_TERESTIAN_EVENT, DONE);
+            m_pInstance->SetData(TYPE_TERESTIAN, DONE);
     }
 
     void UpdateAI(const uint32 diff)
@@ -294,7 +296,7 @@ struct MANGOS_DLL_DECL boss_terestianAI : public ScriptedAI
             {
                 DoCast(target, SPELL_SACRIFICE, true);
 
-                Creature* Chains = m_creature->SummonCreature(CREATURE_DEMONCHAINS, -11234.2, -1698.46, 179.24, 0.67621, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 21000);
+                Creature* Chains = m_creature->SummonCreature(CREATURE_DEMONCHAINS, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 21000);
                 if (Chains)
                 {
                     ((mob_demon_chainAI*)Chains->AI())->SacrificeGUID = target->GetGUID();
