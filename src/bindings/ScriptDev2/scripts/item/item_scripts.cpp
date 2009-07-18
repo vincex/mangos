@@ -150,33 +150,9 @@ bool ItemUse_item_gor_dreks_ointment(Player* pPlayer, Item* pItem, const SpellCa
     return false;
 }
 
-bool ItemUse_item_morph_gdr(Player* pPlayer, Item* pItem, const SpellCastTargets &pTargets)
-{
-     uint16 display_id;
-     uint32 select = rand()%10;
-     switch(select)
-     {
-        case 0: display_id = 10990;
-            break;
-        case 1: display_id = 5791;
-     }
-     if(pPlayer->GetDisplayId() == display_id)
-       return false;
-     else
-        pPlayer->DestroyItemCount(1000000,1,true);
-     return true;
-
-}
-
-
 void AddSC_item_scripts()
 {
     Script *newscript;
-
-    newscript = new Script;
-    newscript->Name = "item_morph_gdr";
-    newscript->pItemUse = &ItemUse_item_morph_gdr;
-    newscript->RegisterSelf();
 
     newscript = new Script;
     newscript->Name = "item_arcane_charges";
