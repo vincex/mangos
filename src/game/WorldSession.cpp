@@ -243,6 +243,24 @@ void WorldSession::LogoutPlayer(bool Save)
 
     if (_player)
     {
+        uint32 uLifeTimeKills = _player->GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS);
+
+        //team: 67 = horde  |  469 = alliance
+        uint32 uTeam = _player->GetTeam();
+        uint32 uTitles = (uint32)(log(uLifeTimeKills) / log(2.18));
+
+       if(uTitles!=0)
+       {
+           if(uTitles>14)
+    	        uTitles = 14;
+
+	    if(uTeam == 67)
+               uTitles += 14;
+
+           if(CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(uTitles))
+        	_player->SetTitle(titleEntry);
+	}
+
         if (uint64 lguid = GetPlayer()->GetLootGUID())
             DoLootRelease(lguid);
 
