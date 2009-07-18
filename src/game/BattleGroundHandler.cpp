@@ -674,12 +674,20 @@ void WorldSession::HandleBattlemasterJoinArena( WorldPacket & recv_data )
     uint8 arenatype = 0;
     uint32 arenaRating = 0;
 
+    time_t t = time(NULL);
+    tm * tempo;
+    tempo = localtime(&t);
+
     switch(type)
     {
         case 0:
+            if ( tempo->tm_hour > 2 && tempo->tm_hour < 10 )
+               return;
             arenatype = ARENA_TYPE_2v2;
             break;
         case 1:
+            if ( tempo->tm_hour > 1 && tempo->tm_hour < 11 )
+               return;
             arenatype = ARENA_TYPE_3v3;
             break;
         case 2:
