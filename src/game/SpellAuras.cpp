@@ -3325,6 +3325,8 @@ void Aura::HandleModStealth(bool apply, bool Real)
 
     if (apply)
     {
+        pTarget->RemoveAllAttackers();
+
         // drop flag at stealth in bg
         if(Real && pTarget->GetTypeId()==TYPEID_PLAYER && ((Player*)pTarget)->InBattleGround())
             if(BattleGround *bg = ((Player*)pTarget)->GetBattleGround())
@@ -3411,6 +3413,7 @@ void Aura::HandleInvisibility(bool apply, bool Real)
 {
     if(apply)
     {
+        m_target->RemoveAllAttackers();
         m_target->m_invisibilityMask |= (1 << m_modifier.m_miscvalue);
 
         if(Real && m_target->GetTypeId()==TYPEID_PLAYER)
