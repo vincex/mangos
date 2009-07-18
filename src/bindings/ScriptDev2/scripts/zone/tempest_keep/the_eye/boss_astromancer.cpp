@@ -212,6 +212,7 @@ struct MANGOS_DLL_DECL boss_high_astromancer_solarianAI : public ScriptedAI
             //ArcaneMissiles_Timer
             if (ArcaneMissiles_Timer < diff)
             {
+                 m_creature->InterruptNonMeleeSpells(false);
                 //Solarian casts Arcane Missiles on on random targets in the raid.
                 Unit* target = SelectUnit(SELECT_TARGET_RANDOM, 0);
                 if (!m_creature->HasInArc(2.5f, target))
