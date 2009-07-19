@@ -598,10 +598,89 @@ bool QuestAccept_npc_karynaku(Player* pPlayer, Creature* pCreature, const Quest*
     return true;
 }
 
+/*####
+# npcs_spectrecles
+####*/
+
+bool GossipHello_npcs_spectrecles(Player* pPlayer, Creature* pCreature)
+{
+    if (pCreature->isQuestGiver())
+        pPlayer->PrepareQuestMenu(pCreature->GetGUID());
+		
+        if (!pPlayer->HasItemCount(30721,1) && (pPlayer->GetQuestStatus(10644) == QUEST_STATUS_COMPLETE || pPlayer->GetQuestStatus(10633) == QUEST_STATUS_COMPLETE ))
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Take the Spectrecles", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
+
+        pPlayer->SEND_GOSSIP_MENU(pCreature->GetNpcTextId(), pCreature->GetGUID());
+
+    return true;
+}
+
+bool GossipSelect_npcs_spectrecles(Player* pPlayer, Creature* pCreature, uint32 sender, uint32 action)
+{
+    pCreature->CastSpell(pPlayer,37700,false);
+    pPlayer->PlayerTalkClass->ClearMenus();
+    return true;
+}
+
+/*####
+# npcs_flare_gun
+####*/
+
+bool GossipHello_npcs_flare_gun(Player* pPlayer, Creature* pCreature)
+{
+    if (pCreature->isQuestGiver())
+        pPlayer->PrepareQuestMenu(pCreature->GetGUID());
+        
+    if (pPlayer->GetQuestStatus(10750) == QUEST_STATUS_COMPLETE)
+    { 
+        if(!pPlayer->HasItemCount(31108,1) && !pPlayer->GetQuestStatus(10769) == QUEST_STATUS_COMPLETE)
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Take the Kor'kron Flare Gun", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
+    }
+    else if (pPlayer->GetQuestStatus(10772) == QUEST_STATUS_COMPLETE)
+    {
+        if(!pPlayer->HasItemCount(31310,1) && !pPlayer->GetQuestStatus(10776) == QUEST_STATUS_COMPLETE)
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Take the Wildhammer Flare Gun", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
+    }
+
+    pPlayer->SEND_GOSSIP_MENU(pCreature->GetNpcTextId(), pCreature->GetGUID());
+    return true;
+}
+
+bool GossipSelect_npcs_flare_gun(Player* pPlayer, Creature* pCreature, uint32 sender, uint32 action)
+{
+    ItemPosCountVec dest;
+    if (action == GOSSIP_ACTION_INFO_DEF+1)
+    {
+        uint8 msg = pPlayer->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, 31108, 1, false);
+        if (msg == EQUIP_ERR_OK)
+            pPlayer->StoreNewItem(dest, 31108, 1, true);
+    }
+    if (action == GOSSIP_ACTION_INFO_DEF+2)
+    {        
+        uint8 msg = pPlayer->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, 31310, 1, false);
+        if (msg == EQUIP_ERR_OK)
+            pPlayer->StoreNewItem(dest, 31310, 1, true);
+    }
+    pPlayer->PlayerTalkClass->ClearMenus();
+    return true;
+}
+
 void AddSC_shadowmoon_valley()
 {
     Script *newscript;
 
+    newscript = new Script;
+    newscript->Name = "npcs_spectrecles";
+    newscript->pGossipHello =  &GossipHello_npcs_spectrecles;
+    newscript->pGossipSelect = &GossipSelect_npcs_spectrecles;
+    newscript->RegisterSelf();
+    
+    newscript = new Script;
+    newscript->Name = "npcs_flare_gun";
+    newscript->pGossipHello =  &GossipHello_npcs_flare_gun;
+    newscript->pGossipSelect = &GossipSelect_npcs_flare_gun;
+    newscript->RegisterSelf();
+    
     newscript = new Script;
     newscript->Name = "mob_mature_netherwing_drake";
     newscript->GetAI = &GetAI_mob_mature_netherwing_drake;
