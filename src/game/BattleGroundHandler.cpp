@@ -681,18 +681,20 @@ void WorldSession::HandleBattlemasterJoinArena( WorldPacket & recv_data )
     switch(type)
     {
         case 0:
-            if ( tempo->tm_hour > 2 && tempo->tm_hour < 10 )
+            if (isRated && tempo->tm_hour > 2 && tempo->tm_hour < 10 )
                return;
             arenatype = ARENA_TYPE_2v2;
             break;
         case 1:
-            if ( tempo->tm_hour > 1 && tempo->tm_hour < 11 )
+            if (isRated && tempo->tm_hour > 1 && tempo->tm_hour < 11 )
                return;
             arenatype = ARENA_TYPE_3v3;
             break;
         case 2:
+            if (isRated)
+               return;
             arenatype = ARENA_TYPE_5v5;
-            return;
+            break;
         default:
             sLog.outError("Unknown arena slot %u at HandleBattlemasterJoinArena()", type);
             return;
