@@ -31,7 +31,7 @@ bool GOHello_go_gong_of_bethekk(Player* pPlayer, GameObject* pGo)
         if (pInstance->GetData(TYPE_ARLOKK) == DONE || pInstance->GetData(TYPE_ARLOKK) == IN_PROGRESS)
             return true;
 
-        pInstance->SetData(TYPE_ARLOKK) == IN_PROGRESS);
+        pInstance->SetData(TYPE_ARLOKK, IN_PROGRESS);
     }
 
     return false;
