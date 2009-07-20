@@ -40,8 +40,8 @@ EndScriptData */
 #define MOB_COILFANG_FRENZY_CORPSE	21689
 const int MAX_HONOR_GUARD	= 6;
 
-const int ENCOUNTERS    = 7;
-const int MAX_GENERATOR = 4;
+const int MAX_ENCOUNTER    = 7;
+const int MAX_GENERATOR     = 4;
 
 struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 {
@@ -58,8 +58,8 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
     uint64 m_uiLeotherasEvent_Starter;
     uint64 m_uiSpellBinder[3];
 
-    uint32 m_uiShieldGenerator[MAX_GENERATOR];
-    uint32 m_uiEncounter[ENCOUNTERS];
+    uint32 m_auiShieldGenerator[MAX_GENERATOR];
+    uint32 m_auiEncounter[MAX_ENCOUNTER];
 
 	std::set<uint64> m_uiHonorGuardGUID;
 	uint32 WaterTimer;
@@ -278,7 +278,7 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
         switch(uiType)
         {
             case TYPE_HYDROSS_EVENT:
-                return m_uiEncounter[0];
+                return m_auiEncounter[0];
 
             case TYPE_LEOTHERAS_EVENT:
                 return m_auiEncounter[1];

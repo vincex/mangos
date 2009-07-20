@@ -127,7 +127,7 @@ struct MANGOS_DLL_DECL instance_steam_vault : public ScriptedInstance
 
                     debug_log("SD2: Instance Steamvault: Access panel used.");
                 }
-                Encounter[0] = data;
+                m_auiEncounter[0] = data;
                 break;
             case TYPE_MEKGINEER_STEAMRIGGER:
                 if (data == SPECIAL)
@@ -191,7 +191,7 @@ struct MANGOS_DLL_DECL instance_steam_vault : public ScriptedInstance
     {
         OUT_SAVE_INST_DATA;
         std::ostringstream stream;
-        stream << Encounter[0] << " " << Encounter[1] << " " << Encounter[2] << " " << Encounter[3];
+        stream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3];
         char* out = new char[stream.str().length() + 1];
         strcpy(out, stream.str().c_str());
         if(out)
@@ -211,10 +211,10 @@ struct MANGOS_DLL_DECL instance_steam_vault : public ScriptedInstance
         }
         OUT_LOAD_INST_DATA(in);
         std::istringstream stream(in);
-        stream >> Encounter[0] >> Encounter[1] >> Encounter[2] >> Encounter[3];
-        for(uint8 i = 0; i < ENCOUNTERS; ++i)
-            if(Encounter[i] == IN_PROGRESS)
-                Encounter[i] = NOT_STARTED;
+        stream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3];
+        for(uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+            if(m_auiEncounter[i] == IN_PROGRESS)
+                m_auiEncounter[i] = NOT_STARTED;
         OUT_LOAD_INST_DATA_COMPLETE;
     }
 };
