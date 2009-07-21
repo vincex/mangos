@@ -878,9 +878,21 @@ void Aura::_AddAura()
             // allow use single slot only by auras from same caster
             if(itr->second->GetCasterGUID()==GetCasterGUID())
             {
-                secondaura = true;
-                slot = itr->second->GetAuraSlot();
-                break;
+                //Fix Doppio proc da item melee dual wield.
+                if(GetId()==28093 && itr->second->GetCastItemGUID()!=GetCastItemGUID())
+                {
+                    //Teoricamente dorebbe funzionare pure senza il getId ma non è possibile valutare tutti i casi... quindi meglio
+                    //mettere un controllo forzato... in un futuro se si è certi che del itemGuid che recuperano le varie spell
+                    //Si potrebbe mettere un solo: 
+                    //        if(itr->second->GetCasterGUID()==GetCasterGUID() && itr->second->GetCastItemGUID()==GetCastItemGUID()) 
+                    sLog.outDebug("Rilevato proc mongoose da due differenti sorgenti sullo stesso target.");
+                }
+                else
+                {
+                    secondaura = true;
+                    slot = itr->second->GetAuraSlot();
+                    break;
+                }
             }
         }
 
