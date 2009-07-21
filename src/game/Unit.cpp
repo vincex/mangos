@@ -4210,7 +4210,7 @@ bool Unit::AddAura(Aura *Aur)
                         case SPELL_AURA_PERIODIC_ENERGIZE:
                         case SPELL_AURA_OBS_MOD_MANA:
                         case SPELL_AURA_POWER_BURN_MANA: break;
-                        case SPELL_AURA_DUMMY: if ( aurSpellInfo->Id == 15286 || aurSpellInfo->SpellIconID == 2213 );
+                        case SPELL_AURA_DUMMY: if ( aurSpellInfo->Id == 15286 || aurSpellInfo->SpellIconID == 2213 )
                             break;
                         default:                            // not allow
                             // can be only single (this check done at _each_ aura add
