@@ -40,7 +40,7 @@ EndScriptData */
 #define MOB_COILFANG_FRENZY_CORPSE	21689
 const int MAX_HONOR_GUARD	= 6;
 
-const int MAX_ENCOUNTER    = 7;
+const int MAX_ENCOUNTER    = 8;
 const int MAX_GENERATOR     = 4;
 
 struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
@@ -57,6 +57,8 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
     uint64 m_uiLeotheras;
     uint64 m_uiLeotherasEvent_Starter;
     uint64 m_uiSpellBinder[3];
+    uint64 m_uiControlConsole;
+    uint64 m_uiBridgePart[3];
 
     uint32 m_auiShieldGenerator[MAX_GENERATOR];
     uint32 m_auiEncounter[MAX_ENCOUNTER];
@@ -82,6 +84,10 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
         m_uiSpellBinder[0]=0;
         m_uiSpellBinder[1]=0;
         m_uiSpellBinder[2]=0;
+        m_uiControlConsole = 0;
+        m_uiBridgePart[0] = 0;
+        m_uiBridgePart[1] = 0;
+        m_uiBridgePart[2] = 0;
 
         //Lurker Event
         WaterTimer = 1000;
@@ -96,6 +102,23 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                 return true;
 
         return false;
+    }
+	
+    void CheckConsole()
+    {
+        if (GameObject* pConsole = instance->GetGameObject(m_uiControlConsole))
+        {
+            bool bridge=true;
+            for(uint8 i = 0; i < 5; i++)
+            {   
+                if (m_auiEncounter[i] != DONE)
+                    bridge=false;
+            }
+            if(bridge)
+                pConsole->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+            else 
+                pConsole->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+        }
     }
 
     void notifyFish() 
@@ -189,6 +212,26 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                             break;
         }
     }
+	
+    void OnObjectCreate(GameObject* pGo)
+    {
+        switch(pGo->GetEntry())
+        {
+            case 184568: m_uiControlConsole = pGo->GetGUID();
+                pGo->SetGoState(GO_STATE_READY);
+				CheckConsole();
+               break;
+            case 184203: m_uiBridgePart[0] = pGo->GetGUID();
+                pGo->SetGoState(GO_STATE_READY);
+                break;
+            case 184204: m_uiBridgePart[1] = pGo->GetGUID();
+                pGo->SetGoState(GO_STATE_READY);
+                break;
+            case 184205: m_uiBridgePart[2] = pGo->GetGUID();
+                pGo->SetGoState(GO_STATE_READY);
+                break;
+        }
+    }
 
     void SetData64(uint32 uiType, uint64 uiData)
     {
@@ -270,7 +313,17 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
             case TYPE_SHIELDGENERATOR4:
                 m_auiShieldGenerator[3] = uiData;
                 break;
+            case TYPE_CONSOLE_EVENT: 
+                if (GameObject* pBridge1 = instance->GetGameObject(m_uiBridgePart[0]))
+                    pBridge1->SetGoState(GO_STATE_ACTIVE);
+                if (GameObject* pBridge2 = instance->GetGameObject(m_uiBridgePart[1]))
+                    pBridge2->SetGoState(GO_STATE_ACTIVE);
+                if (GameObject* pBridge3 = instance->GetGameObject(m_uiBridgePart[2]))
+                    pBridge3->SetGoState(GO_STATE_ACTIVE);
+                m_auiEncounter[7] = uiData; 
+                break;
         }
+        CheckConsole();
     }
 
     uint32 GetData(uint32 uiType)
@@ -323,6 +376,17 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
     }
 };
 
+bool GOHello_go_bridge_console(Player *pPlayer, GameObject* pGo)
+{
+    ScriptedInstance* m_pInstance = (ScriptedInstance*)pGo->GetInstanceData();
+
+    if(!m_pInstance)
+        return false;
+
+    m_pInstance->SetData(TYPE_CONSOLE_EVENT, DONE);
+    return true;
+}
+
 InstanceData* GetInstanceData_instance_serpentshrine_cavern(Map* pMap)
 {
     return new instance_serpentshrine_cavern(pMap);
@@ -334,5 +398,10 @@ void AddSC_instance_serpentshrine_cavern()
     newscript = new Script;
     newscript->Name = "instance_serpent_shrine";
     newscript->GetInstanceData = &GetInstanceData_instance_serpentshrine_cavern;
+    newscript->RegisterSelf();
+	
+    newscript = new Script;
+    newscript->Name="go_bridge_console";
+    newscript->pGOHello = &GOHello_go_bridge_console;
     newscript->RegisterSelf();
 }
