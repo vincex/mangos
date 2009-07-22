@@ -33,6 +33,8 @@ enum
 
     DATA_SPELLBINDER_1              = 24,
     DATA_SPELLBINDER_2              = 25,
-    DATA_SPELLBINDER_3              = 26
+    DATA_SPELLBINDER_3              = 26,
+	
+    TYPE_CONSOLE_EVENT              = 27
 };
 #endif
