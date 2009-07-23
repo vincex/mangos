@@ -208,6 +208,8 @@ struct MANGOS_DLL_DECL boss_high_king_maulgarAI : public ScriptedAI
         if (m_uiWhirlwind_Timer < uiDiff)
         {
             DoCast(m_creature->getVictim(), SPELL_WHIRLWIND);
+            m_creature->AttackerStateUpdate(m_creature->getVictim(), BASE_ATTACK);
+            m_creature->resetAttackTimer(BASE_ATTACK);
             m_uiWhirlwind_Timer = 30000+rand()%10000;
         }
         else
