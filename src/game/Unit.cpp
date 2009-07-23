@@ -1597,12 +1597,36 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabilityLoss)
         for(AuraMap::iterator itr = vAuras.begin(); itr != vAuras.end(); ++itr)
         {
             SpellEntry const *spellInfo = (*itr).second->GetSpellProto();
-            if( spellInfo->AttributesEx3 & 0x40000 && spellInfo->SpellFamilyName == SPELLFAMILY_PALADIN && ((*itr).second->GetCasterGUID() == GetGUID()))
+            if( spellInfo->AttributesEx3 & 0x40000 && spellInfo->SpellFamilyName == SPELLFAMILY_PALADIN)
             {
                 (*itr).second->SetAuraDuration((*itr).second->GetAuraMaxDuration());
                 (*itr).second->UpdateAuraDuration();
             }
         }
+    }
+    //TANKK FIX PROC ENCHANT
+    if(GetTypeId() == TYPEID_PLAYER)
+    {
+        if(damageInfo->damage)  //Tankk Proc Armi
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                switch(spellProto->Effect[j])
+                {
+                 case SPELL_EFFECT_WEAPON_DAMAGE:
+                 case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
+                 case SPELL_EFFECT_NORMALIZED_WEAPON_DMG:
+                 case SPELL_EFFECT_WEAPON_PERCENT_DAMAGE:
+                     if(pVictim->isAlive())                                                            
+                     {
+                         ((Player*)this)->CastItemCombatSpell(pVictim, BASE_ATTACK);
+                     }
+                     break;
+                 default:
+                     break;
+                }
+            }
+       }
     }
     // Call default DealDamage
     CleanDamage cleanDamage(damageInfo->cleanDamage, BASE_ATTACK, MELEE_HIT_NORMAL);
