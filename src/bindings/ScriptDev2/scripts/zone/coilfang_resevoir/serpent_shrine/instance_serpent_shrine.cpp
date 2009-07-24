@@ -284,7 +284,7 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                 m_auiEncounter[1] = uiData;
                 break;
             case TYPE_THELURKER_EVENT:
-                if (m_uiEncounter[2] == DONE) break;
+                if (m_auiEncounter[2] == DONE) break;
                 m_auiEncounter[2] = uiData;
                 break;
             case TYPE_KARATHRESS_EVENT:

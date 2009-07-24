@@ -103,7 +103,7 @@ struct MANGOS_DLL_DECL instance_steam_vault : public ScriptedInstance
         {
             case MAIN_CHAMBERS_DOOR: m_uiMainChambersDoor = pGo->GetGUID(); break;
                  if ((GetData(TYPE_HYDROMANCER_THESPIA) == SPECIAL) && (GetData(TYPE_MEKGINEER_STEAMRIGGER) == SPECIAL))
-                     go->SetGoState(GO_STATE_ACTIVE); break;
+                     pGo->SetGoState(GO_STATE_ACTIVE); break;
             case ACCESS_PANEL_HYDRO: m_uiAccessPanelHydro = pGo->GetGUID(); break;
             case ACCESS_PANEL_MEK:   m_uiAccessPanelMek = pGo->GetGUID(); break;
         }
