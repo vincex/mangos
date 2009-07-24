@@ -4212,6 +4212,7 @@ bool Unit::AddAura(Aura *Aur)
             // if StackAmount==0 not allow auras from same caster
             else
             {
+                bool stop=false
                 for(AuraMap::iterator i2 = m_Auras.lower_bound(spair); i2 != m_Auras.upper_bound(spair); ++i2)
                 {
                     if(i2->second->GetCasterGUID()==Aur->GetCasterGUID())
