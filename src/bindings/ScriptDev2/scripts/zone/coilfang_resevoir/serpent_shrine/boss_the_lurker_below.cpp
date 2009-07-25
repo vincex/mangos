@@ -145,6 +145,17 @@ struct MANGOS_DLL_DECL boss_the_lurker_belowAI : public Scripted_NoMovementAI
         //DoScriptText(SAY_DEATH, m_creature);
         if (m_pInstance)
             m_pInstance->SetData(TYPE_THELURKER_EVENT, DONE);
+        
+        Map *pMap = m_creature->GetMap();
+        if (!pMap->IsDungeon())
+            return;
+        Map::PlayerList const &PlayerList = pMap->GetPlayers();
+        if (PlayerList.isEmpty())
+	        return;
+        for(Map::PlayerList::const_iterator i = PlayerList.begin();i != PlayerList.end(); ++i)
+            if(Player* pPlayer = i->getSource())
+                if (pPlayer->HasAura(37284))  //scalding water
+                    pPlayer->RemoveAurasDueToSpell(37284);
     }
 
     void CheckWaterAggro()
