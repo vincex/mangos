@@ -1604,30 +1604,16 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabilityLoss)
             }
         }
     }
+
     //TANKK FIX PROC ENCHANT
-    if(GetTypeId() == TYPEID_PLAYER)
+    if(damageInfo->damage && spellProto->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
     {
-        if(damageInfo->damage)  //Tankk Proc Armi
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                switch(spellProto->Effect[j])
-                {
-                 case SPELL_EFFECT_WEAPON_DAMAGE:
-                 case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
-                 case SPELL_EFFECT_NORMALIZED_WEAPON_DMG:
-                 case SPELL_EFFECT_WEAPON_PERCENT_DAMAGE:
-                     if(pVictim->isAlive())                                                            
-                     {
-                         ((Player*)this)->CastItemCombatSpell(pVictim, BASE_ATTACK);
-                     }
-                     break;
-                 default:
-                     break;
-                }
-            }
-       }
+        if (spellProto->AttributesEx3 & SPELL_ATTR_EX3_REQ_OFFHAND)
+            ((Player*)this)->CastItemCombatSpell(pVictim, OFF_ATTACK);
+        else
+            ((Player*)this)->CastItemCombatSpell(pVictim, BASE_ATTACK);
     }
+
     // Call default DealDamage
     CleanDamage cleanDamage(damageInfo->cleanDamage, BASE_ATTACK, MELEE_HIT_NORMAL);
     DealDamage(pVictim, damageInfo->damage, &cleanDamage, SPELL_DIRECT_DAMAGE, SpellSchoolMask(damageInfo->schoolMask), spellProto, durabilityLoss);
