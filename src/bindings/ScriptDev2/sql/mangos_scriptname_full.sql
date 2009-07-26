@@ -521,7 +521,7 @@ UPDATE creature_template SET ScriptName='npc_wounded_blood_elf' WHERE entry=1699
 
 
 /* HINTERLANDS */
-
+UPDATE creature_template SET ScriptName='npc_rinji' WHERE entry=7780;
 
 /* HOWLING FJORD */
 
