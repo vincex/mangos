@@ -497,9 +497,10 @@ struct MANGOS_DLL_DECL boss_lady_vashjAI : public ScriptedAI
                     {
                         if(pPlayer->HasItemCount(31088, 1, false))
                         {
+                            if(pPlayer->HasAura(39666))  pPlayer->RemoveAurasDueToSpell(39666); // cloak of shadowx
                             if(!pPlayer->HasAura(39258))
                                 pPlayer->CastSpell(pPlayer, 39258, false); // spell root
-                        }
+                       }
                         else if(pPlayer->HasAura(39258))
                             pPlayer->RemoveAurasDueToSpell(39258);
                     }
