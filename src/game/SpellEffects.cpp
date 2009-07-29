@@ -4074,21 +4074,43 @@ void Spell::EffectWeaponDmg(uint32 i)
             // Devastate bonus and sunder armor refresh
             else if(m_spellInfo->SpellVisual == 671 && m_spellInfo->SpellIconID == 1508)
             {
-                customBonusDamagePercentMod = true;
-                bonusDamagePercentMod = 0.0f;               // only applied if auras found
-
                 Unit::AuraList const& list = unitTarget->GetAurasByType(SPELL_AURA_MOD_RESISTANCE);
                 for(Unit::AuraList::const_iterator itr=list.begin();itr!=list.end();++itr)
                 {
                     SpellEntry const *proto = (*itr)->GetSpellProto();
                     if(proto->SpellVisual == 406 && proto->SpellIconID == 565)
                     {
-                        int32 duration = GetSpellDuration(proto);
-                        (*itr)->SetAuraDuration(duration);
-                        (*itr)->UpdateAuraDuration();
-                        bonusDamagePercentMod += 1.0f;      // +100%
+                        switch(m_spellInfo->Id)
+                        {
+       	                    case 20243: spell_bonus = 15;
+       	                    break;
+       	                    case 30016: spell_bonus = 25;
+       	                    break;
+       	                    case 30022: spell_bonus = 35;
+       	                    break;
+                        }						
+                        spell_bonus *= (*itr)->GetStackAmount();
                     }
                 }
+				
+                // get highest rank of the Sunder Armor spell
+                const PlayerSpellMap& sp_list = ((Player*)m_caster)->GetSpellMap();
+                for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
+                {
+                    // only highest rank is shown in spell book, so simply check if shown in spell book
+                    if(!itr->second->active || itr->second->disabled || itr->second->state == PLAYERSPELL_REMOVED)
+                        continue;
+
+                    SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
+                    if (!spellInfo)
+                        continue;
+                    
+                    if (spellInfo->SpellVisual == 406 && spellInfo->SpellIconID == 565)
+                    {
+                        m_caster->CastSpell(unitTarget, spellInfo->Id, true);
+                        break;
+                    }
+                }	
             }
             break;
         }
