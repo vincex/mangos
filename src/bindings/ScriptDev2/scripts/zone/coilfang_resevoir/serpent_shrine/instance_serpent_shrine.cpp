@@ -47,6 +47,8 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
 {
     instance_serpentshrine_cavern(Map* pMap) : ScriptedInstance(pMap) { Initialize(); };
 
+    std::string strSaveData;
+	
     uint64 m_uiLurker;
     uint64 m_uiSharkkis;
     uint64 m_uiTidalvess;
@@ -278,9 +280,11 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
         switch(uiType)
         {
             case TYPE_HYDROSS_EVENT:
+                if (m_auiEncounter[0] == DONE) break;
                 m_auiEncounter[0] = uiData;
                 break;
             case TYPE_LEOTHERAS_EVENT:
+                if (m_auiEncounter[1] == DONE) break;
                 m_auiEncounter[1] = uiData;
                 break;
             case TYPE_THELURKER_EVENT:
@@ -288,9 +292,11 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                 m_auiEncounter[2] = uiData;
                 break;
             case TYPE_KARATHRESS_EVENT:
+                if (m_auiEncounter[3] == DONE) break;
                 m_auiEncounter[3] = uiData;
                 break;
             case TYPE_MOROGRIM_EVENT:
+                if (m_auiEncounter[4] == DONE) break;
                 m_auiEncounter[4] = uiData;
                 break;
             case TYPE_LADYVASHJ_EVENT:
@@ -324,6 +330,26 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
                 break;
         }
         CheckConsole();
+
+        if (uiData == DONE)
+        {
+            OUT_SAVE_INST_DATA;
+
+            std::ostringstream saveStream;
+            saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " "
+                << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5] << " "
+                << m_auiEncounter[6] << " " << m_auiEncounter[7];
+
+            strSaveData = saveStream.str();
+
+            SaveToDB();
+            OUT_SAVE_INST_DATA_COMPLETE;
+        }
+    }
+
+    const char* Save()
+    {
+        return strSaveData.c_str();
     }
 
     uint32 GetData(uint32 uiType)
@@ -373,6 +399,28 @@ struct MANGOS_DLL_DECL instance_serpentshrine_cavern : public ScriptedInstance
         }
 
         return 0;
+    }
+
+    void Load(const char* chrIn)
+    {
+        if (!chrIn)
+        {
+            OUT_LOAD_INST_DATA_FAIL;
+            return;
+        }
+
+        OUT_LOAD_INST_DATA(chrIn);
+
+        std::istringstream loadStream(chrIn);
+
+        loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3]
+            >> m_auiEncounter[4] >> m_auiEncounter[5] >> m_auiEncounter[6] >> m_auiEncounter[7];
+
+        for(uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+            if (m_auiEncounter[i] == IN_PROGRESS)           // Do not load an encounter as "In Progress" - reset it instead.
+                m_auiEncounter[i] = NOT_STARTED;
+
+        OUT_LOAD_INST_DATA_COMPLETE;
     }
 };
 

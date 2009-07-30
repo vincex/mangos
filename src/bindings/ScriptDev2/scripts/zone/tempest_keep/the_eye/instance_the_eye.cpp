@@ -37,6 +37,8 @@ struct MANGOS_DLL_DECL instance_the_eye : public ScriptedInstance
 {
     instance_the_eye(Map *map) : ScriptedInstance(map) {Initialize();};
 
+    std::string strSaveData;
+
     uint64 ThaladredTheDarkener;
     uint64 LordSanguinar;
     uint64 GrandAstromancerCapernian;
@@ -48,7 +50,7 @@ struct MANGOS_DLL_DECL instance_the_eye : public ScriptedInstance
     uint8 KaelthasEventPhase;
     uint8 AlarEventPhase;
 
-    bool Encounters[ENCOUNTERS];
+    uint32 Encounters[ENCOUNTERS];
 
     void Initialize()
     {
@@ -70,7 +72,7 @@ struct MANGOS_DLL_DECL instance_the_eye : public ScriptedInstance
     bool IsEncounterInProgress() const
     {
         for(uint8 i = 0; i < ENCOUNTERS; i++)
-            if (Encounters[i]) return true;
+            if (Encounters[i] == IN_PROGRESS) return true;
 
         return false;
     }
@@ -124,27 +126,46 @@ struct MANGOS_DLL_DECL instance_the_eye : public ScriptedInstance
         {
             case DATA_ALAREVENT:
                 AlarEventPhase = data;
-                Encounters[0] = (data) ? true : false;
+                Encounters[0] = data;
                 break;
 
             case DATA_SOLARIANEVENT:
-                Encounters[1] = (data) ? true : false;
+                Encounters[1] = data;
                 break;
 
             case DATA_VOIDREAVEREVENT:
-                Encounters[2] = (data) ? true : false;
+                Encounters[2] = data;
                 break;
 
                 //Kael'thas
             case DATA_KAELTHASEVENT:
                 KaelthasEventPhase = data;
-                Encounters[3] = (data) ? true : false;
+                Encounters[3] = data;
                 break;
 
             case DATA_HIGHASTROMANCERSOLARIANEVENT:
-                Encounters[4] = (data) ? true : false;
+                Encounters[4] = data;
                 break;
         }
+
+        if (data == DONE)
+        {
+            OUT_SAVE_INST_DATA;
+
+            std::ostringstream saveStream;
+            saveStream << Encounters[0] << " " << Encounters[1] << " " << Encounters[2] << " "
+                << Encounters[3] << " " << Encounters[4];
+
+            strSaveData = saveStream.str();
+
+            SaveToDB();
+            OUT_SAVE_INST_DATA_COMPLETE;
+        }
+    }
+
+    const char* Save()
+    {
+        return strSaveData.c_str();
     }
 
     uint32 GetData(uint32 type)
@@ -169,6 +190,28 @@ struct MANGOS_DLL_DECL instance_the_eye : public ScriptedInstance
         }
 
         return 0;
+    }
+
+    void Load(const char* chrIn)
+    {
+        if (!chrIn)
+        {
+            OUT_LOAD_INST_DATA_FAIL;
+            return;
+        }
+
+        OUT_LOAD_INST_DATA(chrIn);
+
+        std::istringstream loadStream(chrIn);
+
+        loadStream >> Encounters[0] >> Encounters[1] >> Encounters[2] >> Encounters[3]
+            >> Encounters[4];
+
+        for(uint8 i = 0; i < ENCOUNTERS; ++i)
+            if (Encounters[i] == IN_PROGRESS)           // Do not load an encounter as "In Progress" - reset it instead.
+                Encounters[i] = NOT_STARTED;
+
+        OUT_LOAD_INST_DATA_COMPLETE;
     }
 };
 
