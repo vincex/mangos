@@ -455,7 +455,7 @@ Unit* ScriptedAI::DoSelectLowestHpFriendly(float fRange, uint32 uiMinHPDiff)
     Unit* pUnit = NULL;
 
     MaNGOS::MostHPMissingInRange u_check(m_creature, fRange, uiMinHPDiff);
-    MaNGOS::UnitLastSearcher<MaNGOS::MostHPMissingInRange> searcher(pUnit, u_check);ck);
+    MaNGOS::UnitLastSearcher<MaNGOS::MostHPMissingInRange> searcher(pUnit, u_check);
 
     /*
     typedef TYPELIST_4(GameObject, Creature*except pets*, DynamicObject, Corpse*Bones*) AllGridObjectTypes;
@@ -499,7 +499,7 @@ std::list<Creature*> ScriptedAI::DoFindFriendlyMissingBuff(float fRange, uint32 
     std::list<Creature*> pList;
 
     MaNGOS::FriendlyMissingBuffInRange u_check(m_creature, fRange, uiSpellId);
-    MaNGOS::CreatureListSearcher<MaNGOS::FriendlyMissingBuffInRange> searcher(pList, u_check);check);
+    MaNGOS::CreatureListSearcher<MaNGOS::FriendlyMissingBuffInRange> searcher(pList, u_check);
 
     TypeContainerVisitor<MaNGOS::CreatureListSearcher<MaNGOS::FriendlyMissingBuffInRange>, GridTypeMapContainer >  grid_creature_searcher(searcher);
 
