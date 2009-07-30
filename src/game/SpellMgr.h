@@ -37,8 +37,6 @@ class Player;
 class Spell;
 struct SpellModifier;
 
-extern SQLStorage sSpellThreatStore;
-
 // only used in code
 enum SpellCategories
 {
@@ -69,13 +67,15 @@ enum SpellFamilyNames
 };
 
 //Some SpellFamilyFlags
-#define SPELLFAMILYFLAG_ROGUE_VANISH            UI64LIT(0x000000800)
-#define SPELLFAMILYFLAG_ROGUE_STEALTH           UI64LIT(0x000400000)
-#define SPELLFAMILYFLAG_ROGUE_BACKSTAB          UI64LIT(0x000800004)
-#define SPELLFAMILYFLAG_ROGUE_SAP               UI64LIT(0x000000080)
-#define SPELLFAMILYFLAG_ROGUE_FEINT             UI64LIT(0x008000000)
-#define SPELLFAMILYFLAG_ROGUE_KIDNEYSHOT        UI64LIT(0x000200000)
-#define SPELLFAMILYFLAG_ROGUE__FINISHING_MOVE   UI64LIT(0x9003E0000)
+#define SPELLFAMILYFLAG_ROGUE_VANISH            UI64LIT(0x0000000000000800)
+#define SPELLFAMILYFLAG_ROGUE_STEALTH           UI64LIT(0x0000000000400000)
+#define SPELLFAMILYFLAG_ROGUE_BACKSTAB          UI64LIT(0x0000000000800004)
+#define SPELLFAMILYFLAG_ROGUE_SAP               UI64LIT(0x0000000000000080)
+#define SPELLFAMILYFLAG_ROGUE_FEINT             UI64LIT(0x0000000008000000)
+#define SPELLFAMILYFLAG_ROGUE_KIDNEYSHOT        UI64LIT(0x0000000000200000)
+#define SPELLFAMILYFLAG_ROGUE__FINISHING_MOVE   UI64LIT(0x00000009003E0000)
+
+#define SPELLFAMILYFLAG_PALADIN_SEALS           UI64LIT(0x000004000A000200)
 
 // Spell clasification
 enum SpellSpecific
@@ -132,7 +132,7 @@ inline bool IsSealSpell(SpellEntry const *spellInfo)
 {
     //Collection of all the seal family flags. No other paladin spell has any of those.
     return spellInfo->SpellFamilyName == SPELLFAMILY_PALADIN &&
-        ( spellInfo->SpellFamilyFlags & UI64LIT(0x4000A000200));
+        ( spellInfo->SpellFamilyFlags & SPELLFAMILYFLAG_PALADIN_SEALS );
 }
 
 inline bool IsElementalShield(SpellEntry const *spellInfo)
@@ -251,6 +251,17 @@ inline uint32 GetSpellMechanicMask(SpellEntry const* spellInfo, int32 effect)
         mask |= 1<<spellInfo->Mechanic;
     if (spellInfo->EffectMechanic[effect])
         mask |= 1<<spellInfo->EffectMechanic[effect];
+    return mask;
+}
+
+inline uint32 GetAllSpellMechanicMask(SpellEntry const* spellInfo)
+{
+    uint32 mask = 0;
+    if (spellInfo->Mechanic)
+        mask |= 1<<spellInfo->Mechanic;
+    for (int i=0; i< 3; ++i)
+        if (spellInfo->EffectMechanic[i])
+            mask |= 1<<spellInfo->EffectMechanic[i];
     return mask;
 }
 
@@ -375,6 +386,7 @@ typedef UNORDERED_MAP<uint32, SpellProcEventEntry> SpellProcEventMap;
 #define ELIXIR_SHATTRATH_MASK 0x8
 
 typedef std::map<uint32, uint8> SpellElixirMap;
+typedef std::map<uint32, uint16> SpellThreatMap;
 
 // Spell script target related declarations (accessed using SpellMgr functions)
 enum SpellTargetType
@@ -576,6 +588,15 @@ class SpellMgr
                 return SPELL_GUARDIAN_ELIXIR;
             else
                 return SPELL_NORMAL;
+        }
+
+        uint16 GetSpellThreat(uint32 spellid) const
+        {
+            SpellThreatMap::const_iterator itr = mSpellThreatMap.find(spellid);
+            if(itr==mSpellThreatMap.end())
+                return 0;
+
+            return itr->second;
         }
 
         // Spell proc events
@@ -791,6 +812,7 @@ class SpellMgr
         SpellTargetPositionMap mSpellTargetPositions;
         SpellAffectMap     mSpellAffectMap;
         SpellElixirMap     mSpellElixirs;
+        SpellThreatMap     mSpellThreatMap;
         SpellProcEventMap  mSpellProcEventMap;
         SkillLineAbilityMap mSkillLineAbilityMap;
         SpellPetAuraMap     mSpellPetAuraMap;

@@ -61,6 +61,18 @@ enum SpellModType
     SPELLMOD_PCT          = 108                             // SPELL_AURA_ADD_PCT_MODIFIER
 };
 
+// 2^n values, Player::m_isunderwater is a bitmask. These are mangos internal values, they are never send to any client
+enum PlayerUnderwaterState
+{
+    UNDERWATER_NONE                     = 0x00,
+    UNDERWATER_INWATER                  = 0x01,             // terrain type is water and player is afflicted by it
+    UNDERWATER_INLAVA                   = 0x02,             // terrain type is lava and player is afflicted by it
+    UNDERWATER_INSLIME                  = 0x04,             // terrain type is lava and player is afflicted by it
+    UNDERWARER_INDARKWATER              = 0x08,             // terrain type is dark water and player is afflicted by it
+
+    UNDERWATER_EXIST_TIMERS             = 0x10
+};
+
 enum PlayerSpellState
 {
     PLAYERSPELL_UNCHANGED = 0,
@@ -117,11 +129,12 @@ enum ActionButtonUpdateState
 
 enum ActionButtonType
 {
-    ACTION_BUTTON_SPELL = 0,
-    ACTION_BUTTON_EQSET = 32,
-    ACTION_BUTTON_MACRO = 64,
-    ACTION_BUTTON_CMACRO= 65,
-    ACTION_BUTTON_ITEM  = 128
+    ACTION_BUTTON_SPELL     = 0x00,
+    ACTION_BUTTON_C         = 0x01,                         // click?
+    ACTION_BUTTON_EQSET     = 0x20,
+    ACTION_BUTTON_MACRO     = 0x40,
+    ACTION_BUTTON_CMACRO    = ACTION_BUTTON_C | ACTION_BUTTON_MACRO,
+    ACTION_BUTTON_ITEM      = 0x80
 };
 
 #define ACTION_BUTTON_ACTION(X) (uint32(X) & 0x00FFFFFF)
@@ -445,6 +458,8 @@ enum MirrorTimerType
     BREATH_TIMER       = 1,
     FIRE_TIMER         = 2
 };
+#define MAX_TIMERS      3
+#define DISABLED_MIRROR_TIMER   -1
 
 // 2^n values
 enum PlayerExtraFlags
@@ -1594,6 +1609,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint32 DurabilityRepairAll(bool cost, float discountMod, bool guildBank);
         uint32 DurabilityRepair(uint16 pos, bool cost, float discountMod, bool guildBank);
 
+        void UpdateMirrorTimers();
         void StopMirrorTimers()
         {
             StopMirrorTimer(FATIGUE_TIMER);
@@ -1875,8 +1891,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool CanFly() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_CAN_FLY); }
         bool IsFlying() const { return m_movementInfo.HasMovementFlag(MOVEMENTFLAG_FLYING); }
 
-        void HandleDrowning();
-
         void SetClientControl(Unit* target, uint8 allowMove);
 
         uint64 GetFarSight() const { return GetUInt64Value(PLAYER_FARSIGHT); }
@@ -1926,7 +1940,6 @@ class MANGOS_DLL_SPEC Player : public Unit
             void UpdateVisibilityOf(T* target, UpdateData& data, UpdateDataMapType& data_updates, std::set<WorldObject*>& visibleNow);
 
         // Stealth detection system
-        uint32 m_DetectInvTimer;
         void HandleStealthedUnitsDetection();
 
         uint8 m_forced_speed_changes[MAX_MOVE_TYPE];
@@ -1993,7 +2006,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         DeclinedName const* GetDeclinedNames() const { return m_declinedname; }
         bool HasTitle(uint32 bitIndex);
         bool HasTitle(CharTitlesEntry const* title) { return HasTitle(title->bit_index); }
-        void SetTitle(CharTitlesEntry const* title);
+        void SetTitle(CharTitlesEntry const* title, bool lost = false);
 
         bool isActiveObject() const { return true; }
     protected:
@@ -2071,11 +2084,14 @@ class MANGOS_DLL_SPEC Player : public Unit
         /*********************************************************/
         /***              ENVIRONMENTAL SYSTEM                 ***/
         /*********************************************************/
-        void HandleLava();
         void HandleSobering();
-        void StartMirrorTimer(MirrorTimerType Type, uint32 MaxValue);
-        void ModifyMirrorTimer(MirrorTimerType Type, uint32 MaxValue, uint32 CurrentValue, uint32 Regen);
+        void SendMirrorTimer(MirrorTimerType Type, uint32 MaxValue, uint32 CurrentValue, int32 Regen);
         void StopMirrorTimer(MirrorTimerType Type);
+        void HandleDrowning(uint32 time_diff);
+        int32 getMaxTimer(MirrorTimerType timer);
+        int32 m_MirrorTimer[MAX_TIMERS];
+        uint8 m_MirrorTimerFlags;
+        uint8 m_MirrorTimerFlagsLast;
 
         /*********************************************************/
         /***                  HONOR SYSTEM                     ***/
@@ -2149,7 +2165,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool   m_DailyQuestChanged;
         time_t m_lastDailyQuestTime;
 
-        uint32 m_breathTimer;
         uint32 m_drunkTimer;
         uint16 m_drunk;
         uint32 m_weaponChangeTimer;
@@ -2230,6 +2245,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         WorldLocation m_teleport_dest;
         bool mSemaphoreTeleport_Near;
         bool mSemaphoreTeleport_Far;
+
+        uint32 m_DetectInvTimer;
 
         // Temporary removed pet cache
         uint32 m_temporaryUnsummonedPetNumber;
