@@ -5377,7 +5377,7 @@ bool Unit::HandleHasteAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 case 13877:
                 case 33735:
                 {
-                    target = SelectNearbyTarget();
+                    target = SelectNearbyTarget(pVictim);
                     if(!target)
                         return false;
                     basepoints0 = damage;
@@ -5462,7 +5462,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     if(procSpell && procSpell->Id==26654)
                         return false;
 
-                    target = SelectNearbyTarget();
+                    target = SelectNearbyTarget(pVictim);
                     if(!target)
                         return false;
 
@@ -12484,7 +12484,7 @@ void Unit::UpdateReactives( uint32 p_time )
     }
 }
 
-Unit* Unit::SelectNearbyTarget() const
+Unit* Unit::SelectNearbyTarget(Uni* except /*= NULL*/) const
 {
     CellPair p(MaNGOS::ComputeCellPair(GetPositionX(), GetPositionY()));
     Cell cell(p);
@@ -12506,8 +12506,8 @@ Unit* Unit::SelectNearbyTarget() const
     }
 
     // remove current target
-    if(getVictim())
-        targets.remove(getVictim());
+    if(except)
+        targets.remove(except);
 
     // remove not LoS targets
     for(std::list<Unit *>::iterator tIter = targets.begin(); tIter != targets.end();)

@@ -597,6 +597,8 @@ extern void AddSC_western_plaguelands();
 extern void AddSC_westfall();
 
 //Wetlands
+extern void AddSC_wetlands();
+
 //Winterspring
 extern void AddSC_winterspring();
 
@@ -1501,6 +1503,8 @@ void ScriptsInit()
     AddSC_westfall();
 
     //Wetlands
+    AddSC_wetlands();
+
     //Winterspring
     AddSC_winterspring();
 
