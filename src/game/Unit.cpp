@@ -5332,6 +5332,9 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     // Off-Hand case
                     if ( castItem->GetSlot() == EQUIPMENT_SLOT_OFFHAND )
                     {
+						if(roll_chance_i(50))
+							return false;
+
                         // Value gained from additional AP
                         basepoints0 = int32(extra_attack_power/14.0f * GetAttackTime(OFF_ATTACK)/1000/2);
                         triggered_spell_id = 33750;
