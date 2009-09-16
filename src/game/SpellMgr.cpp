@@ -2903,7 +2903,7 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
                 return DIMINISHING_DEATHCOIL;
             // Fear
             if (spellproto->SpellFamilyFlags & UI64LIT(0x40840000000))
-                return DIMINISHING_WARLOCK_FEAR;
+                return DIMINISHING_FEAR;
             // Curses/etc
             if (spellproto->SpellFamilyFlags & UI64LIT(0x00080000000))
                 return DIMINISHING_LIMITONLY;
