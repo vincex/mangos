@@ -8232,7 +8232,12 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
     SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
 
     if(isCharmed() || (GetTypeId()!=TYPEID_PLAYER && ((Creature*)this)->isPet()))
+    {
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT);
+        UpdateSpeed(MOVE_RUN, true);
+        UpdateSpeed(MOVE_SWIM, true);
+        UpdateSpeed(MOVE_FLIGHT, true);
+    }
 
     if (creatureNotInCombat)
     {
@@ -8813,8 +8818,12 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
         data << float(GetSpeed(mtype));
         SendMessageToSet( &data, true );
     }
-    if(Pet* pet = GetPet())
-        pet->SetSpeed(MOVE_RUN, m_speed_rate[mtype],forced);
+    if(GetPetGUID() && !isInCombat())
+        if(Pet* pet = GetPet())  
+            if((GetTypeId()!=TYPEID_PLAYER && ((Creature*)this)->isPet()))
+                pet->SetSpeed(mtype, m_speed_rate[mtype], forced);  
+            else if(!isCharmed())
+                return;
 }
 
 void Unit::SetHover(bool on)
