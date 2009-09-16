@@ -1456,8 +1456,24 @@ void Spell::EffectDummy(uint32 i)
                         // decreased damage (/2) for non-stunned target.
                         SpellModifier *mod = new SpellModifier;
                         mod->op = SPELLMOD_DAMAGE;
-                        mod->value = -50;
-                        mod->type = SPELLMOD_PCT;
+						switch(spell_id)
+						{
+							case 20467: mod ->value = -48;
+								break;
+							case 20963: mod ->value = -76;
+								break;
+							case 20964: mod ->value = -107;
+								break;
+							case 20965: mod ->value = -137;
+								break;
+							case 20966: mod ->value = -178;
+								break;
+							case 27171: mod ->value = -240;
+								break;
+							default: break;
+						}
+
+                        mod->type = SPELLMOD_FLAT;
                         mod->spellId = m_spellInfo->Id;
                         mod->effectId = i;
                         mod->lastAffected = NULL;
