@@ -469,6 +469,8 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
                     break;
                 case SPELL_AURA_PROC_TRIGGER_SPELL:
                     // many positive auras have negative triggered spells at damage for example and this not make it negative (it can be canceled for example)
+                    if (spellproto->SpellIconID==45)  // impact
+                        return true;
                     break;
                 case SPELL_AURA_MOD_STUN:                   //have positive and negative spells, we can't sort its correctly at this moment.
                     if(effIndex==0 && spellproto->Effect[1]==0 && spellproto->Effect[2]==0)
