@@ -876,16 +876,12 @@ void Spell::EffectDummy(uint32 i)
                 }
                 case 28730:                                 // Arcane Torrent (Mana)
                 {
-                    int32 count = 0;
-                    Unit::AuraList const& m_dummyAuras = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
-                    for(Unit::AuraList::const_iterator i = m_dummyAuras.begin(); i != m_dummyAuras.end(); ++i)
-                        if ((*i)->GetId() == 28734)
-                            ++count;
-                    if (count)
+                    Aura * dummy = m_caster->GetDummyAura(28734);
+                    if (dummy)
                     {
-                        m_caster->RemoveAurasDueToSpell(28734);
-                        int32 bp = damage * count;
+                        int32 bp = damage * dummy->m_stackAmount;
                         m_caster->CastCustomSpell(m_caster, 28733, &bp, NULL, NULL, true);
+                        m_caster->RemoveAurasDueToSpell(28734);
                     }
                     return;
                 }
@@ -2260,7 +2256,7 @@ void Spell::EffectHeal( uint32 /*i*/ )
             Unit::AuraList const& mDummyAuras = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
             for(Unit::AuraList::const_iterator i = mDummyAuras.begin(); i != mDummyAuras.end(); ++i)
                 if ((*i)->GetId() == 45062)
-                    damageAmount+=(*i)->GetModifier()->m_amount;
+                    damageAmount+=(*i)->GetModifier()->m_amount * (*i)->m_stackAmount;
             if (damageAmount)
                 m_caster->RemoveAurasDueToSpell(45062);
 
