@@ -1786,6 +1786,7 @@ void Spell::EffectTriggerSpell(uint32 effIndex)
                     !iter->second->IsPositive() && !iter->second->IsPassive() &&
                     // ignore physical auras
                     (GetSpellSchoolMask(iter->second->GetSpellProto()) & SPELL_SCHOOL_MASK_NORMAL)==0 )
+                    && iter->second->GetSpellProto()->Id != 26013) //Ignore Deserter
                 {
                     m_caster->RemoveAurasDueToSpell(iter->second->GetSpellProto()->Id);
                     iter = Auras.begin();
