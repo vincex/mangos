@@ -56,7 +56,8 @@ AggressorAI::MoveInLineOfSight(Unit *u)
             if(!m_creature->getVictim())
             {
                 AttackStart(u);
-                u->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+                //TANKK Nessuna rimozione stealth su gain aggro...
+                //u->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
             }
             else if(sMapStore.LookupEntry(m_creature->GetMapId())->IsDungeon())
             {
