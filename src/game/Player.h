@@ -890,6 +890,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool ToggleDND();
         bool isAFK() const { return HasFlag(PLAYER_FLAGS,PLAYER_FLAGS_AFK); };
         bool isDND() const { return HasFlag(PLAYER_FLAGS,PLAYER_FLAGS_DND); };
+        bool IsCastingSpell() const;
         uint8 chatTag() const;
         std::string afkMsg;
         std::string dndMsg;
