@@ -4145,6 +4145,40 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
     // For prevent double apply bonuses
     bool loading = (m_target->GetTypeId() == TYPEID_PLAYER && ((Player*)m_target)->GetSession()->PlayerLoading());
 
+    // Blood Frenzy, remove when no longer bleeding
+    if (Real && !apply && m_spellProto->SpellFamilyName==SPELLFAMILY_WARRIOR && (m_spellProto->SpellFamilyFlags & 0x1000000020LL) )
+    {
+         // search for another rend or deep wounds
+         bool found = false;
+         Unit::AuraList const& auras = m_target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
+         for(Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
+         {
+              SpellEntry const* itr_spell = (*itr)->GetSpellProto();
+              if(itr_spell && itr_spell->SpellFamilyName==SPELLFAMILY_WARRIOR && (itr_spell->SpellFamilyFlags & 0x1000000020LL) )
+              {
+                   found = true;
+                   break;
+              }
+         }
+         if(!found)
+         {
+              Unit::AuraList const& auras = m_target->GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN);
+              for(Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end();)
+              {
+                   SpellEntry const* itr_spell = (*itr)->GetSpellProto();
+                   if(itr_spell && itr_spell->SpellIconID == 2005 )
+                   {
+                        m_target->RemoveAurasDueToSpell(itr_spell->Id);
+                        itr = auras.begin();
+                   }
+                   else
+                   {
+                       itr++;
+                   }
+              }
+         }
+    }
+    
     // Custom damage calculation after
     if (apply)
     {
