@@ -5897,7 +5897,17 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
          // Healing Discount
          if (auraSpellInfo->Id==37705)
          {
-             trigger_spell_id = 37706;
+             switch (getClass())
+             {
+                 case CLASS_DRUID:   trigger_spell_id = 37721;break;
+                 case CLASS_PRIEST:  trigger_spell_id = 37706;break;
+                 case CLASS_SHAMAN:  trigger_spell_id = 37722;break;  
+                 case CLASS_PALADIN: trigger_spell_id = 37723;break;
+                 default:
+                    sLog.outError("Unit::HandleProcTriggerSpell: ClassePlayer non supportata", auraSpellInfo->Id);
+                    return false;
+             }
+
              target = this;
          }
          // Judgement of Light and Judgement of Wisdom
@@ -5965,12 +5975,8 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
              CastSpell(this, 37658, true, NULL, triggeredByAura);
              return false;
              Aura * dummy = GetDummyAura(37658);
-             if (!dummy)
+             if (!dummy || dummy->m_stackAmount <=2)
                 return false;
-                
-             // release at 3 aura in stack (cont contain in basepoint of trigger aura)
-             if(dummy->m_stackAmount <= 2)
-                 return false;
 
              RemoveAurasDueToSpell(37658);
              trigger_spell_id = 37661;
