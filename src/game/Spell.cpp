@@ -1373,7 +1373,7 @@ void Spell::SetTargetMap(uint32 effIndex,uint32 targetMode,UnitList& TagUnitMap)
         case TARGET_CHAIN_DAMAGE:
         {
             // Charge casted on self
-            if (m_spellInfo->Effect[i] == SPELL_EFFECT_CHARGE)
+            if (m_spellInfo->Effect[effIndex] == SPELL_EFFECT_CHARGE)
             {
                 TagUnitMap.push_back(m_caster);
                 break;
@@ -3493,7 +3493,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             return SPELL_FAILED_NOT_INFRONT;
         }
 
-        if( (target->GetTypeId()==TYPEID_PLAYER) && (!target->isVisibleForOrDetect(m_caster,true)) )
+        if( (target->GetTypeId()==TYPEID_PLAYER) && (!target->isVisibleForOrDetect(m_caster, m_caster, true)) )
         {
             SendInterrupted(2);
             return SPELL_FAILED_NOT_INFRONT;

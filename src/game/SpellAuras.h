@@ -297,6 +297,9 @@ class MANGOS_DLL_SPEC Aura
 
         int32 m_stackAmount;
 
+	int32 GetStackAmount() {return m_stackAmount;}
+        void SetStackAmount(int32 amount) {m_stackAmount=amount;}
+        
         virtual Unit* GetTriggerTarget() const { return m_target; }
 
         // add/remove SPELL_AURA_MOD_SHAPESHIFT (36) linked auras
@@ -318,9 +321,6 @@ class MANGOS_DLL_SPEC Aura
         void PeriodicTick();
         void PeriodicDummyTick();
 
-        int32 GetStackAmount() {return m_stackAmount;}
-        void SetStackAmount(int32 amount) {m_stackAmount=amount;}
-        
         void ReapplyAffectedPassiveAuras(Unit* target, SpellModifier const& spellmod);
 
         Modifier m_modifier;

@@ -3426,8 +3426,6 @@ void Aura::HandleModStealth(bool apply, bool Real)
 {
     if (apply)
     {
-        pTarget->RemoveAllAttackers();
-        
         // drop flag at stealth in bg
         if(Real && m_target->GetTypeId()==TYPEID_PLAYER && ((Player*)m_target)->InBattleGround())
             if(BattleGround *bg = ((Player*)m_target)->GetBattleGround())
@@ -3436,6 +3434,8 @@ void Aura::HandleModStealth(bool apply, bool Real)
         // only at real aura add
         if (Real)
         {
+	    m_target->RemoveAllAttackers();
+
             m_target->SetStandFlags(UNIT_STAND_FLAGS_CREEP);
             if(m_target->GetTypeId()==TYPEID_PLAYER)
                 m_target->SetFlag(PLAYER_FIELD_BYTES2, 0x2000);
@@ -4094,10 +4094,6 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 if (m_removeMode != AURA_REMOVE_BY_DISPEL)
                     // Cast Wrath of the Plaguebringer if not dispelled
                     m_target->CastSpell(m_target, 29214, true, 0, this);
-                    if(!apply && m_spellProto->Id == 29946 && m_duration>200){ //aura can be removed a little bit first
-                    {
-                         m_target->CastSpell(m_target, 29949, true, 0, this);
-                    }
                 return;
             case 42783:                                     //Wrath of the Astrom...
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && GetEffIndex() + 1 < 3)
@@ -4106,6 +4102,9 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
             default:
                 break;
         }
+    }
+    if(!apply && m_spellProto->Id == 29946 && m_duration>200){ //aura can be removed a little bit first
+	m_target->CastSpell(m_target, 29949, true, 0, this);
     }
 }
 

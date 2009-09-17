@@ -620,7 +620,7 @@ struct CalcDamageInfo
     uint32 cleanDamage;          // Used only fo rage calcultion
     MeleeHitOutcome hitOutCome;  // TODO: remove this field (need use TargetState)
 };
-
+/*
 // Spell damage info structure based on structure sending in SMSG_SPELLNONMELEEDAMAGELOG opcode
 struct SpellNonMeleeDamage{
  SpellNonMeleeDamage(Unit *_attacker, Unit *_target, uint32 _SpellID, uint32 _schoolMask) :
@@ -640,9 +640,9 @@ struct SpellNonMeleeDamage{
  uint32 HitInfo;
  // Used for help
  uint32 cleanDamage;
-};
+};*/
 
-uint32 createProcExtendMask(SpellNonMeleeDamage *damageInfo, SpellMissInfo missCondition);
+//uint32 createProcExtendMask(SpellNonMeleeDamage *damageInfo, SpellMissInfo missCondition);
 
 // Spell damage info structure based on structure sending in SMSG_SPELLNONMELEEDAMAGELOG opcode
 struct SpellNonMeleeDamage{
@@ -658,6 +658,7 @@ struct SpellNonMeleeDamage{
     uint32 schoolMask;
     uint32 absorb;
     uint32 resist;
+    float crit;
     bool   physicalLog;
     bool   unused;
     uint32 blocked;
@@ -665,6 +666,8 @@ struct SpellNonMeleeDamage{
     // Used for help
     uint32 cleanDamage;
 };
+
+uint32 createProcExtendMask(SpellNonMeleeDamage *damageInfo, SpellMissInfo missCondition);
 
 struct SpellPeriodicAuraLogInfo
 {
@@ -1242,6 +1245,8 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         Spell* GetCurrentSpell(CurrentSpellTypes spellType) const { return m_currentSpells[spellType]; }
         Spell* FindCurrentSpellBySpellId(uint32 spell_id) const;
 
+        Spell* m_currentSpells[CURRENT_MAX_SPELL];
+
         uint32 m_addDmgOnce;
         uint64 m_TotemSlot[MAX_TOTEM];
         uint64 m_ObjectSlot[4];
@@ -1514,7 +1519,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 m_state;                                     // Even derived shouldn't modify
         uint32 m_CombatTimer;
 
-        Spell* m_currentSpells[CURRENT_MAX_SPELL];
+        //Spell* m_currentSpells[CURRENT_MAX_SPELL];
 
         UnitVisibility m_Visibility;
 

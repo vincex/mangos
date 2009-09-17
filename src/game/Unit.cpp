@@ -350,7 +350,7 @@ void Unit::SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, uint8 ty
     }
 
     //Movement Flags (0x0 = walk, 0x100 = run, 0x200 = fly/swim)
-    data << uint32(GetTypeId() == TYPEID_PLAYER ? MOVEMENTFLAG_WALK_MODE : MovementFlags);
+    data << uint32(GetTypeId() == TYPEID_PLAYER ? MONSTER_MOVE_WALK : flags);
 
     if(flags & MONSTER_MOVE_WALK)
         Time *= 1.05f;
@@ -1080,7 +1080,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
 
     uint32 crTypeMask = pVictim->GetCreatureTypeMask();
     // Check spell crit chance
-    bool crit = isSpellCrit(pVictim, spellInfo, damageSchoolMask, attackType, damageInfo->crit););
+    bool crit = isSpellCrit(pVictim, spellInfo, damageSchoolMask, attackType, damageInfo->crit);
     bool blocked = false;
     // Per-school calc
     switch (spellInfo->DmgClass)
@@ -1592,16 +1592,17 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
     {
         if(GetTypeId() == TYPEID_PLAYER && pVictim->isAlive())
         {
-            ((Player*)this)->CastItemCombatSpell(pVictim,attType);
+            ((Player*)this)->CastItemCombatSpell(pVictim, damageInfo->attackType);
         }
 
         // victim's damage shield
         std::set<Aura*> alreadyDone;
-        uint32 removedAuras = pVictim->m_removedAuras;
+        //uint32 removedAuras = pVictim->m_removedAuras;
         AuraList const& vDamageShields = pVictim->GetAurasByType(SPELL_AURA_DAMAGE_SHIELD);
-        for(AuraList::const_iterator i = vDamageShields.begin(), next = vDamageShields.begin(); i != vDamageShields.end(); i = next)
+        //for(AuraList::const_iterator i = vDamageShields.begin(), next = vDamageShields.begin(); i != vDamageShields.end(); i = next)
+        for(AuraList::const_iterator i = vDamageShields.begin(); i != vDamageShields.end();)
         {
-           next++;
+           //next++;
            if (alreadyDone.find(*i) == alreadyDone.end())
            {
                alreadyDone.insert(*i);
@@ -1624,12 +1625,15 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
 
                pVictim->DealDamage(this, damage, 0, SPELL_DIRECT_DAMAGE, GetSpellSchoolMask(spellProto), spellProto, true);
 
-               if (pVictim->m_removedAuras > removedAuras)
-               {
-                   removedAuras = pVictim->m_removedAuras;
-                   next = vDamageShields.begin();
-               }
+               //if (pVictim->m_removedAuras > removedAuras)
+               //{
+               //   removedAuras = pVictim->m_removedAuras;
+               //   next = vDamageShields.begin();
+               //}
+               i = vDamageShields.begin();
            }
+           else
+        	++i;
         }
     }
 }
@@ -3294,6 +3298,7 @@ bool Unit::AddAura(Aura *Aur)
             // if StackAmount==0 not allow auras from same caster
             else
             {
+        	bool stop=false;
                 for(AuraMap::iterator i2 = m_Auras.lower_bound(spair); i2 != m_Auras.upper_bound(spair); ++i2)
                 {
                     if(i2->second->GetCasterGUID()==Aur->GetCasterGUID())
@@ -10304,7 +10309,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
                 sLog.outDebug("ProcDamageAndSpell: casting mending (triggered by %s dummy aura of spell %u)",
                     (isVictim?"a victim's":"an attacker's"),triggeredByAura->GetId());
 
-                HandleMeandingAuraProc(triggeredByAura);
+                HandleMendingAuraProc(triggeredByAura);
                 break;
             }
             case SPELL_AURA_MOD_STUN:
@@ -10386,7 +10391,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
     deep--;
 }
 //END TANKK ProcFlag
-
+/*
 void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag, AuraTypeSet const& procAuraTypes, WeaponAttackType attType, SpellEntry const * procSpell, uint32 damage, SpellSchoolMask damageSchoolMask )
 {
     for(AuraTypeSet::const_iterator aur = procAuraTypes.begin(); aur != procAuraTypes.end(); ++aur)
@@ -10519,7 +10524,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
         }
     }
 }
-
+*/
 SpellSchoolMask Unit::GetMeleeDamageSchoolMask() const
 {
     return SPELL_SCHOOL_MASK_NORMAL;
