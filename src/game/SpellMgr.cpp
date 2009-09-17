@@ -2889,6 +2889,12 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             // Blind
             else if (spellproto->SpellFamilyFlags & UI64LIT(0x00001000000))
                 return DIMINISHING_BLIND_CYCLONE;
+            // Sap
+            else if (spellproto->SpellFamilyFlags & 0x00000000080LL)
+                return DIMINISHING_POLYMORPH;
+            // Gouge
+            else if (spellproto->SpellFamilyFlags & 0x00000000008LL)
+                return DIMINISHING_POLYMORPH;
             break;
         }
         case SPELLFAMILY_HUNTER:
