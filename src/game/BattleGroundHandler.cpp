@@ -667,6 +667,8 @@ void WorldSession::HandleBattlemasterJoinArena( WorldPacket & recv_data )
             arenatype = ARENA_TYPE_3v3;
             break;
         case 2:
+            if(isRated)
+                return;
             arenatype = ARENA_TYPE_5v5;
             break;
         default:
