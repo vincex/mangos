@@ -129,7 +129,8 @@ void BattleGround::Update(uint32 diff)
         //BG is empty
         return;
 
-    WorldPacket data;
+    m_StartTime += diff;
+//    WorldPacket data;
 
     if(GetRemovedPlayersSize())
     {
