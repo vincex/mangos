@@ -616,7 +616,7 @@ void WorldSession::HandlePetCastSpellOpcode( WorldPacket& recvPacket )
 
     pet->clearUnitState(UNIT_STAT_FOLLOW);
 
-    Spell *spell = new Spell(pet, spellInfo, false);
+    Spell *spell = new Spell(pet, spellInfo, spellid == 33395);
     spell->m_targets = targets;
 
     SpellCastResult result = spell->CheckPetCast(NULL);
