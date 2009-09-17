@@ -1027,8 +1027,8 @@ void BattleGround::RemoveFromBGFreeSlotQueue()
 uint32 BattleGround::GetFreeSlotsForTeam(uint32 Team) const
 {
     //if BG is starting ... invite anyone
-    if (GetStatus() == STATUS_WAIT_JOIN)
-        return (GetInvitedCount(Team) < GetMaxPlayersPerTeam()) ? GetMaxPlayersPerTeam() - GetInvitedCount(Team) : 0;
+    //if (GetStatus() == STATUS_WAIT_JOIN)
+    //    return (GetInvitedCount(Team) < GetMaxPlayersPerTeam()) ? GetMaxPlayersPerTeam() - GetInvitedCount(Team) : 0;
     //if BG is already started .. do not allow to join too much players of one faction
     uint32 otherTeam;
     uint32 otherIn;
@@ -1042,7 +1042,7 @@ uint32 BattleGround::GetFreeSlotsForTeam(uint32 Team) const
         otherTeam = GetInvitedCount(ALLIANCE);
         otherIn = GetPlayersCountByTeam(ALLIANCE);
     }
-    if (GetStatus() == STATUS_IN_PROGRESS)
+    if (GetStatus() == STATUS_IN_PROGRESS || GetStatus() == STATUS_WAIT_JOIN)
     {
         // difference based on ppl invited (not necessarily entered battle)
         // default: allow 0
