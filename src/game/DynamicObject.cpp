@@ -68,19 +68,23 @@ bool DynamicObject::Create( uint32 guidlow, Unit *caster, uint32 spellId, uint32
         return false;
     }
 
+    float range_mod = 1.0f;
+    if(spellId != 1543)
+        range_mod = 2.2;
+
     SetEntry(spellId);
     SetFloatValue( OBJECT_FIELD_SCALE_X, 1 );
     SetUInt64Value( DYNAMICOBJECT_CASTER, caster->GetGUID() );
     SetUInt32Value( DYNAMICOBJECT_BYTES, 0x00000001 );
     SetUInt32Value( DYNAMICOBJECT_SPELLID, spellId );
-    SetFloatValue( DYNAMICOBJECT_RADIUS, radius);
+    SetFloatValue( DYNAMICOBJECT_RADIUS, (radius * range_mod));
     SetFloatValue( DYNAMICOBJECT_POS_X, x );
     SetFloatValue( DYNAMICOBJECT_POS_Y, y );
     SetFloatValue( DYNAMICOBJECT_POS_Z, z );
     SetUInt32Value( DYNAMICOBJECT_CASTTIME, getMSTime() );  // new 2.4.0
 
     m_aliveDuration = duration;
-    m_radius = radius;
+    m_radius = radius*1.3;;
     m_effIndex = effIndex;
     m_spellId = spellId;
 
