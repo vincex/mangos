@@ -1931,6 +1931,8 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
     {
         m_currentSpells[CURRENT_MELEE_SPELL]->cast();
 
+        extraAttacks = m_extraAttacks;
+        
         // not recent extra attack only at any non extra attack (melee spell case)
         if(!extra && extraAttacks)
         {
@@ -1964,6 +1966,8 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
     if(pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->AI())
         ((Creature*)pVictim)->AI()->AttackedBy(this);
 
+    extraAttacks = m_extraAttacks;
+    
     // extra attack only at any non extra attack (normal case)
     if(!extra && extraAttacks)
     {
@@ -2310,6 +2314,11 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell)
 {
     WeaponAttackType attType = BASE_ATTACK;
 
+    //Alcune spell castate su se stessi non devono dare resist
+    for(int i=0;i<3;++i)
+    if( spell->Effect[i] == SPELL_EFFECT_CHARGE || spell->Id == 36554 || spell->Id == 14183)
+        return SPELL_MISS_NONE;
+
     if (spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED)
         attType = RANGED_ATTACK;
 
@@ -2408,6 +2417,11 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit *pVictim, SpellEntry const *spell)
 {
     // Can`t miss on dead target (on skinning for example)
     if (!pVictim->isAlive())
+        return SPELL_MISS_NONE;
+        
+    //Alcune spell castate su se stessi non devono dare resist
+    for(int i=0;i<3;++i)
+    if( spell->Effect[i] == SPELL_EFFECT_CHARGE || spell->Id == 36554 || spell->Id == 14183)
         return SPELL_MISS_NONE;
 
     SpellSchoolMask schoolMask = GetSpellSchoolMask(spell);
@@ -7355,7 +7369,7 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
                 CastingTime = 175;
             }
             // Blessing of Sanctuary - 0%
-            else if ((spellProto->SpellFamilyFlags & UI64LIT(0x10000000)) && spellProto->SpellIconID == 29)
+            else if ((spellProto->SpellFamilyFlags & 0x0010000000) && spellProto->SpellIconID == 19)
             {
                 CastingTime = 0;
             }
@@ -7646,6 +7660,10 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
 		case SPELLFAMILY_POTION:
 			return healamount;
 			break;
+		case SPELLFAMILY_PRIEST:
+		    if ( ( spellProto->SpellFamilyFlags & 0x0000100000000000LL ) && ( spellProto->SpellIconID == 1875 ) )
+		        return healamount;
+            break;
 		default: break;
 	}
 	if (spellProto->Id == 33778 || spellProto->Id == 379   ||

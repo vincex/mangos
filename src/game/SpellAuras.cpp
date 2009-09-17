@@ -1442,7 +1442,13 @@ void Aura::TriggerSpell()
                             return;
                         break;
 //                    // Overload
-//                    case 29768: break;
+                        case 29768:
+                        {
+                            int32 overloadDamage = GetModifier()->m_amount;
+                            m_target->CastCustomSpell(m_target,29766,&overloadDamage,NULL,NULL,true);
+                            GetModifier()->m_amount *= 2;
+                            break;
+                        }
 //                    // Return Fire
 //                    case 29788: break;
 //                    // Return Fire
@@ -1954,6 +1960,16 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 // root to self part of (root_target->charge->root_self sequence
                 if(caster)
                     caster->CastSpell(caster, 13138, true, NULL, this);
+                return;
+            case 37098:         //Rain of Bones
+                if(caster){
+                    float px, py, pz;
+                    m_target->GetClosePoint(px,py,pz,3.0f);
+                    for(int i=0;i<3;++i){
+                        Creature* tmp = caster->SummonCreature(17261,px,py,pz,m_target->GetOrientation(),TEMPSUMMON_DEAD_DESPAWN,0);
+                        tmp->setFaction(caster->getFaction());
+                    }
+                }
                 return;
             case 39850:                                     // Rocket Blast
                 if(roll_chance_i(20))                       // backfire stun
@@ -3506,10 +3522,7 @@ void Aura::HandleInvisibility(bool apply, bool Real)
             // apply glow vision
             m_target->SetFlag(PLAYER_FIELD_BYTES2,PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
 
-            // drop flag at invisible in bg
-            if(((Player*)m_target)->InBattleGround())
-                if(BattleGround *bg = ((Player*)m_target)->GetBattleGround())
-                    bg->EventPlayerDroppedFlag((Player*)m_target);
+            m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LOST_SELECTION);
         }
 
         // apply only if not in GM invisibility and not stealth
@@ -3980,6 +3993,9 @@ void Aura::HandleAuraModStateImmunity(bool apply, bool Real)
 
 void Aura::HandleAuraModSchoolImmunity(bool apply, bool Real)
 {
+    if(apply && m_modifier.m_miscvalue == SPELL_SCHOOL_MASK_NORMAL)
+        m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LOST_SELECTION);
+        
     m_target->ApplySpellImmune(GetId(), IMMUNITY_SCHOOL, m_modifier.m_miscvalue, apply);
 
     if(Real && apply && GetSpellProto()->AttributesEx & SPELL_ATTR_EX_DISPEL_AURAS_ON_IMMUNITY)
@@ -4078,6 +4094,10 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 if (m_removeMode != AURA_REMOVE_BY_DISPEL)
                     // Cast Wrath of the Plaguebringer if not dispelled
                     m_target->CastSpell(m_target, 29214, true, 0, this);
+                    if(!apply && m_spellProto->Id == 29946 && m_duration>200){ //aura can be removed a little bit first
+                    {
+                         m_target->CastSpell(m_target, 29949, true, 0, this);
+                    }
                 return;
             case 42783:                                     //Wrath of the Astrom...
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && GetEffIndex() + 1 < 3)
@@ -5648,7 +5668,10 @@ void Aura::HandleAuraRetainComboPoints(bool apply, bool Real)
 void Aura::HandleModUnattackable( bool Apply, bool Real )
 {
     if(Real && Apply)
+    {
         m_target->CombatStop();
+        m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_LOST_SELECTION);
+    }
 
     m_target->ApplyModFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE,Apply);
 }

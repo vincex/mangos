@@ -349,6 +349,8 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                 {
                     m_caster->CastSpell(m_caster, 36032, true);
                 }
+                if (m_spellInfo->Id == 29956)
+                    damage *= 4;
                 break;
             }
             case SPELLFAMILY_WARRIOR:
@@ -899,8 +901,15 @@ void Spell::EffectDummy(uint32 i)
                     return;
                 }
                 case 29858:                                 // Soulshatter
-                    if (unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT && unitTarget->IsHostileTo(m_caster))
+                    if (unitTarget && unitTarget->CanHaveThreatList()&& unitTarget->getThreatManager().getThreat(m_caster) > 0.0f)
                         m_caster->CastSpell(unitTarget,32835,true);
+                    return;
+                case 29979:   //Massive Magnetic Pull
+                    if(unitTarget->GetTypeId() == TYPEID_PLAYER){
+                        WorldLocation pos;
+                        m_caster->GetPosition(pos);
+                        ((Player*)unitTarget)->TeleportTo(pos, TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET | (unitTarget==m_caster ? TELE_TO_SPELL : 0));
+                    }
                     return;
                 case 30458:                                 // Nigh Invulnerability
                     if (!m_CastItem)
@@ -1927,6 +1936,9 @@ void Spell::EffectTeleportUnits(uint32 i)
                 pTarget = unitTarget->getVictim();
             else if(unitTarget->GetTypeId() == TYPEID_PLAYER)
                 pTarget = ObjectAccessor::GetUnit(*unitTarget, ((Player*)unitTarget)->GetSelection());
+
+            if ((!pTarget) || (pTarget->IsFriendlyTo(m_caster)))
+                return;
 
             // Init dest coordinates
             float x = m_targets.m_destX;
@@ -4016,7 +4028,7 @@ void Spell::EffectTaunt(uint32 /*i*/)
 
     // Also use this effect to set the taunter's threat to the taunted creature's highest value
     if (unitTarget->CanHaveThreatList() && unitTarget->getThreatManager().getCurrentVictim())
-        unitTarget->getThreatManager().addThreat(m_caster,unitTarget->getThreatManager().getCurrentVictim()->getThreat());
+        unitTarget->getThreatManager().addThreat(m_caster,unitTarget->getThreatManager().getCurrentVictim()->getThreat() - unitTarget->getThreatManager().getThreat(m_caster) );
 }
 
 void Spell::EffectWeaponDmg(uint32 i)
@@ -5330,22 +5342,57 @@ void Spell::EffectLeapForward(uint32 i)
     {
         float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
 
-        // before caster
-        float fx, fy, fz;
-        unitTarget->GetClosePoint(fx, fy, fz, unitTarget->GetObjectSize(), dis);
-        float ox, oy, oz;
-        unitTarget->GetPosition(ox, oy, oz);
 
-        float fx2, fy2, fz2;                                // getObjectHitPos overwrite last args in any result case
-        if(VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(unitTarget->GetMapId(), ox,oy,oz+0.5, fx,fy,oz+0.5,fx2,fy2,fz2, -0.5))
-        {
-            fx = fx2;
-            fy = fy2;
-            fz = fz2;
-            unitTarget->UpdateGroundPositionZ(fx, fy, fz);
-        }
+        // Start Info //
+            float cx,cy,cz;
+            float dx,dy,dz;
+            float angle = unitTarget->GetOrientation();
+            unitTarget->GetPosition(cx,cy,cz);
 
-        unitTarget->NearTeleportTo(fx, fy, fz, unitTarget->GetOrientation(),unitTarget==m_caster);
+            //Check use of vamps//
+            bool useVmap = false;
+            bool swapZone = true;
+            uint32 mapid = unitTarget->GetMapId();
+            if( MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(cx, cy, cz, false) <  MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(cx, cy, cz, true) )
+                useVmap = true;
+ 
+            //Going foward 0.5f until max distance
+            for(float i=0.5f; i<dis; i+=0.5f)
+            {
+                unitTarget->GetNearPoint2D(dx,dy,i,angle);
+                dz = MapManager::Instance().GetMap(mapid, unitTarget)->GetHeight(dx, dy, cz, useVmap);
+
+                //Prevent climbing and go around object maybe 2.0f is to small? use 3.0f?
+                if( (dz-cz) < 2.0f && (dz-cz) > -2.0f && (unitTarget->IsWithinLOS(dx, dy, dz)))
+                {
+                    //No climb, the z differenze between this and prev step is ok. Store this destination for future use or check.
+                    cx = dx;
+                    cy = dy;
+                    cz = dz;
+                }
+                else
+                {
+                    //Something wrong with los or z differenze... maybe we are going from outer world inside a building or viceversa
+                    if(swapZone)
+                    {
+                        //so... change use of vamp and go back 1 step backward and recheck again.
+                        swapZone = false;
+                        useVmap = !useVmap;
+                        i-=0.5f;
+                    }
+                    else
+                    {
+                        //bad recheck result... so break this and use last good coord for teleport player...
+                        dz += 0.5f;
+                        break;
+                    }
+                }
+            }
+
+            //Prevent Falling during swap building/outerspace
+            unitTarget->UpdateGroundPositionZ(cx, cy, cz);
+
+        unitTarget->NearTeleportTo(cx, cy, cz, unitTarget->GetOrientation(),unitTarget==m_caster);
     }
 }
 
@@ -5454,13 +5501,17 @@ void Spell::EffectCharge(uint32 /*i*/)
     if (!unitTarget)
         return;
 
+    Unit *chargeTarget = m_targets.getUnitTarget();
+    if (!chargeTarget)
+        return;
+    
     //TODO: research more ContactPoint/attack distance.
     //3.666666 instead of ATTACK_DISTANCE(5.0f) in below seem to give more accurate result.
     float x, y, z;
-    unitTarget->GetContactPoint(m_caster, x, y, z, 3.666666f);
+    chargeTarget->GetContactPoint(m_caster, x, y, z, 3.666666f);
 
-    if (unitTarget->GetTypeId() != TYPEID_PLAYER)
-        ((Creature *)unitTarget)->StopMoving();
+    if (chargeTarget->GetTypeId() != TYPEID_PLAYER)
+        ((Creature *)chargeTarget)->StopMoving();
 
     // Only send MOVEMENTFLAG_WALK_MODE, client has strange issues with other move flags
     m_caster->SendMonsterMove(x, y, z, 0, m_caster->GetTypeId()==TYPEID_PLAYER ? MONSTER_MOVE_WALK : ((Creature*)m_caster)->GetMonsterMoveFlags(), 1);
@@ -5469,8 +5520,8 @@ void Spell::EffectCharge(uint32 /*i*/)
         m_caster->GetMap()->CreatureRelocation((Creature*)m_caster,x,y,z,m_caster->GetOrientation());
 
     // not all charge effects used in negative spells
-    if (unitTarget != m_caster && !IsPositiveSpell(m_spellInfo->Id))
-        m_caster->Attack(unitTarget,true);
+    if (chargeTarget != m_caster && !IsPositiveSpell(m_spellInfo->Id))
+        m_caster->Attack(chargeTarget,true);
 }
 
 void Spell::EffectCharge2(uint32 /*i*/)
