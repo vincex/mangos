@@ -3282,7 +3282,7 @@ bool Unit::AddAura(Aura *Aur)
                         case SPELL_AURA_PERIODIC_MANA_LEECH:
                         case SPELL_AURA_OBS_MOD_MANA:
                         case SPELL_AURA_POWER_BURN_MANA: break;
-                        case SPELL_AURA_DUMMY: if ( aurSpellInfo->Id == 15286 || aurSpellInfo->SpellIconID == 2213 );
+                        case SPELL_AURA_DUMMY: if ( aurSpellInfo->Id == 15286 || aurSpellInfo->SpellIconID == 2213 )
                             break;
                         case SPELL_AURA_PERIODIC_ENERGIZE:  // all or self or clear non-stackable
                         default:                            // not allow
