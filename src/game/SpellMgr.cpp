@@ -381,6 +381,9 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
     SpellEntry const *spellproto = sSpellStore.LookupEntry(spellId);
     if (!spellproto) return false;
 
+    if (IsPassiveSpell(spellId) && GetTalentSpellCost(spellId))
+        return true;
+
     switch(spellproto->Effect[effIndex])
     {
         case SPELL_EFFECT_DUMMY:
@@ -581,6 +584,9 @@ bool IsPositiveSpell(uint32 spellId)
 {
     SpellEntry const *spellproto = sSpellStore.LookupEntry(spellId);
     if (!spellproto) return false;
+
+    if(IsPassiveSpell(spellId) && GetTalentSpellCost(spellId))
+        return true;
 
     // spells with atleast one negative effect are considered negative
     // some self-applied spells have negative effects but in self casting case negative check ignored.
