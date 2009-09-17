@@ -1210,7 +1210,7 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabilityLoss)
         }
     }
     
-    if(damageInfo->damage && spellProto->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
+    if(GetTypeId() == TYPEID_PLAYER && damageInfo->damage && spellProto->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
     {
         if (spellProto->AttributesEx3 & SPELL_ATTR_EX3_REQ_OFFHAND)
         {
