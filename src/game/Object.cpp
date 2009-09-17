@@ -1098,6 +1098,17 @@ float WorldObject::GetDistanceZ(const WorldObject* obj) const
     return ( dist > 0 ? dist : 0);
 }
 
+bool WorldObject::IsWithinMeleeInMap(const WorldObject* obj, const float dist2compare) const
+{
+    float dx = GetPositionX() - obj->GetPositionX();
+    float dy = GetPositionY() - obj->GetPositionY();
+    float dz = GetPositionZ() - obj->GetPositionZ();
+    float distsq = (dx*dx) + (dy*dy) + (dz*dz);
+    float maxdist = dist2compare + obj->GetObjectSize() - GetObjectSize();;
+
+    return distsq < maxdist * maxdist;
+}
+
 bool WorldObject::IsWithinDist3d(float x, float y, float z, float dist2compare) const
 {
     float dx = GetPositionX() - x;

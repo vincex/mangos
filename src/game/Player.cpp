@@ -1090,7 +1090,7 @@ void Player::Update( uint32 p_time )
 
             if (isAttackReady(BASE_ATTACK))
             {
-                if(!IsWithinDistInMap(pVictim, pldistance))
+                if(!IsWithinMeleeInMap(pVictim, pldistance))
                 {
                     setAttackTimer(BASE_ATTACK,100);
                     if(m_swingErrorMsg != 1)                // send single time (client auto repeat)
@@ -1127,7 +1127,7 @@ void Player::Update( uint32 p_time )
 
             if ( haveOffhandWeapon() && isAttackReady(OFF_ATTACK))
             {
-                if(!IsWithinDistInMap(pVictim, pldistance))
+                if(!IsWithinMeleeInMap(pVictim, pldistance))
                 {
                     setAttackTimer(OFF_ATTACK,100);
                 }
@@ -6626,6 +6626,11 @@ void Player::CastItemCombatSpell(Unit* Target, WeaponAttackType attType)
             }
 
             float chance = pEnchant->amount[s] != 0 ? float(pEnchant->amount[s]) : GetWeaponProcChance();
+            
+            //Test fix icy chill hack todo u.u
+            if(enchant_id == 1894)
+                chance = 30;
+            
             if (roll_chance_f(chance))
             {
                 if(IsPositiveSpell(pEnchant->spellid[s]))

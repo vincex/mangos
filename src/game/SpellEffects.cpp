@@ -5992,9 +5992,21 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
             // Random select buff for dispel
             Aura *aur = steal_list[urand(0, list_size-1)];
             // Not use chance for steal
-            // TODO possible need do it
-            success_list.push_back( std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));
 
+            SpellEntry const* spellInfo = aur->GetSpellProto();
+            int32 miss_chance = 0;
+
+            if (Unit *caster = aur->GetCaster())
+            {
+                if ( Player* modOwner = caster->GetSpellModOwner() )
+                    modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_RESIST_DISPEL_CHANCE, miss_chance, this);
+            }
+
+            if ( !roll_chance_i(miss_chance) )
+            {
+            	success_list.push_back( std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));
+            }
+            
             // Remove buff from list for prevent doubles
             for (std::vector<Aura *>::iterator j = steal_list.begin(); j != steal_list.end(); )
             {
@@ -6023,7 +6035,12 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(j->first);
                 data << uint32(spellInfo->Id);       // Spell Id
                 data << uint8(0);                    // 0 - steals !=0 transfers
-                unitTarget->RemoveAurasDueToSpellBySteal(spellInfo->Id, j->second, m_caster);
+                if(spellInfo->StackAmount!= 0)
+                {
+                    unitTarget->RemoveSingleAuraFromStackByDispel(spellInfo->Id);
+                }
+                else
+                    unitTarget->RemoveAurasDueToSpellBySteal(spellInfo->Id, j->second, m_caster);
             }
             m_caster->SendMessageToSet(&data, true);
         }

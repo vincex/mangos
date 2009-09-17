@@ -448,9 +448,16 @@ void Unit::RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage)
     if(!HasAuraType(auraType))
         return;
 
+    //TANK FIX DISPEL SU DANNI
+    float level_mod = 25.0f;
+    float max_dmg   = getLevel() > 5 ? ( (getLevel() * getLevel())/10.0f ): 2.0f;
+
+    if(damage>max_dmg)
+    level_mod = 65.0f;
+
+    float chance = (damage/max_dmg) * level_mod;
+    
     // The chance to dispel an aura depends on the damage taken with respect to the casters level.
-    uint32 max_dmg = getLevel() > 8 ? 25 * getLevel() - 150 : 50;
-    float chance = float(damage) / max_dmg * 100.0f;
     if (roll_chance_f(chance))
         RemoveSpellsCausingAura(auraType);
 }
@@ -1073,7 +1080,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
 
     uint32 crTypeMask = pVictim->GetCreatureTypeMask();
     // Check spell crit chance
-    bool crit = isSpellCrit(pVictim, spellInfo, damageSchoolMask, attackType);
+    bool crit = isSpellCrit(pVictim, spellInfo, damageSchoolMask, attackType, damageInfo->crit););
     bool blocked = false;
     // Per-school calc
     switch (spellInfo->DmgClass)
@@ -7530,7 +7537,7 @@ int32 Unit::SpellBaseDamageBonusForVictim(SpellSchoolMask schoolMask, Unit *pVic
     return TakenAdvertisedBenefit;
 }
 
-bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType)
+bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType, float shatterCrit)
 {
     // not critting spell
     if((spellProto->AttributesEx2 & SPELL_ATTR_EX2_CANT_CRIT))
@@ -7564,21 +7571,7 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
                 if (pVictim->GetTypeId() == TYPEID_PLAYER)
                     crit_chance -= ((Player*)pVictim)->GetRatingBonusValue(CR_CRIT_TAKEN_SPELL);
                 // scripted (increase crit chance ... against ... target by x%
-                if(pVictim->isFrozen()) // Shatter
-                {
-                    AuraList const& mOverrideClassScript = GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                    for(AuraList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
-                    {
-                        switch((*i)->GetModifier()->m_miscvalue)
-                        {
-                            case 849: crit_chance+= 10.0f; break; //Shatter Rank 1
-                            case 910: crit_chance+= 20.0f; break; //Shatter Rank 2
-                            case 911: crit_chance+= 30.0f; break; //Shatter Rank 3
-                            case 912: crit_chance+= 40.0f; break; //Shatter Rank 4
-                            case 913: crit_chance+= 50.0f; break; //Shatter Rank 5
-                        }
-                    }
-                }
+                crit_chance+= shatterCrit;
             }
             break;
         }
@@ -9264,6 +9257,25 @@ void Unit::ApplyDiminishingToDuration(DiminishingGroup group, int32 &duration,Un
 {
     if(duration == -1 || group == DIMINISHING_NONE || caster->IsFriendlyTo(this) )
         return;
+
+    //TANKK HACK SECOND WIND
+    if(GetTypeId() == TYPEID_PLAYER)
+    {
+        switch(group)
+        {
+            case DIMINISHING_TRIGGER_STUN:
+            case DIMINISHING_TRIGGER_ROOT:
+                if( HasAura(29838) ) //RANK 2
+                {
+                    CastSpell(this, 29842, true);
+                }
+                else if ( HasAura(29838) ) //RANK 1
+                {
+                    CastSpell(this, 29841, true);
+                }
+                break;
+        }
+    }
 
     // Duration of crowd control abilities on pvp target is limited by 10 sec. (2.2.0)
     if(duration > 10000 && IsDiminishingReturnsGroupDurationLimited(group))

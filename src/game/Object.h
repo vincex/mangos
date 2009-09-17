@@ -425,6 +425,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         {
             return obj && IsInMap(obj) && _IsWithinDist(obj,dist2compare,is3D);
         }
+        bool IsWithinMeleeInMap(const WorldObject* obj, const float dist2compare) const;
         bool IsWithinLOS(float x, float y, float z) const;
         bool IsWithinLOSInMap(const WorldObject* obj) const;
         bool GetDistanceOrder(WorldObject const* obj1, WorldObject const* obj2, bool is3D = true) const;

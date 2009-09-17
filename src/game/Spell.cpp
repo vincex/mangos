@@ -705,6 +705,23 @@ void Spell::AddUnitTarget(Unit* pVictim, uint32 effIndex)
         }
     }
 
+    m_casterCrit=0.0f;
+    if(pVictim->isFrozen()) //Shatter
+    {
+        Unit::AuraList const& mOverrideClassScript = m_originalCaster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+        for(Unit::AuraList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
+        {
+            switch((*i)->GetModifier()->m_miscvalue)
+            {
+                case 849: m_casterCrit+=10.0f; break; //Shatter rank 1
+                case 910: m_casterCrit+=20.0f; break; //Shatter rank 2
+                case 911: m_casterCrit+=30.0f; break; //Shatter rank 3
+                case 912: m_casterCrit+=40.0f; break; //Shatter rank 4
+                case 913: m_casterCrit+=50.0f; break; //Shatter rank 5
+            }
+        }
+    }
+    
     // This is new target calculate data for him
 
     // Get spell hit result on target
@@ -918,6 +935,8 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         // Fill base damage struct (unitTarget - is real spell target)
         SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->Id, m_spellSchoolMask);
 
+        damageInfo.crit = m_casterCrit;
+        
         // Add bonuses and fill damageInfo struct
         caster->CalculateSpellDamage(&damageInfo, m_damage, m_spellInfo);
 
@@ -2782,6 +2801,11 @@ void Spell::SendSpellGo()
     sLog.outDebug("Sending SMSG_SPELL_GO id=%u", m_spellInfo->Id);
 
     uint32 castFlags = CAST_FLAG_UNKNOWN3;
+
+    //Fix per la sparizione della castingbar
+    if(m_IsTriggeredSpell || m_triggeredByAuraSpell)
+	    castFlags |= 0x00000001;
+    
     if(IsRangedSpell())
         castFlags |= CAST_FLAG_AMMO;                        // arrows/bullets visual
 
@@ -3460,6 +3484,12 @@ SpellCastResult Spell::CheckCast(bool strict)
             return SPELL_FAILED_NOT_INFRONT;
         }
 
+        if( (target->GetTypeId()==TYPEID_PLAYER) && (!target->isVisibleForOrDetect(m_caster,true)) )
+        {
+            SendInterrupted(2);
+            return SPELL_FAILED_NOT_INFRONT;
+        }
+        
         // check if target is in combat
         if (non_caster_target && (m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_IN_COMBAT_TARGET) && target->isInCombat())
             return SPELL_FAILED_TARGET_AFFECTING_COMBAT;
@@ -4173,7 +4203,7 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
     if(!m_caster->isAlive())
         return SPELL_FAILED_CASTER_DEAD;
 
-    if(m_caster->IsNonMeleeSpellCasted(false) && !m_IsTriggeredSpell)              //prevent spellcast interruption by another spellcast
+    if(m_caster->IsNonMeleeSpellCasted(false) && !m_IsTriggeredSpell, false)              //prevent spellcast interruption by another spellcast
         return SPELL_FAILED_SPELL_IN_PROGRESS;
     if(m_caster->isInCombat() && IsNonCombatSpell(m_spellInfo))
         return SPELL_FAILED_AFFECTING_COMBAT;
