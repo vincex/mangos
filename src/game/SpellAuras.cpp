@@ -3715,7 +3715,7 @@ void Aura::HandleModThreat(bool apply, bool Real)
     if (m_target->GetTypeId() == TYPEID_PLAYER)
         for(int8 x=0;x < MAX_SPELL_SCHOOL;x++)
             if (m_modifier.m_miscvalue & int32(1<<x))
-                ApplyPercentModFloatVar(m_target->m_threatModifier[x], m_modifier.m_amount, apply);
+                ApplyPercentModFloatVar(m_target->m_threatModifier[x], m_modifier.m_amount * m_stackAmount, apply);
 }
 
 void Aura::HandleAuraModTotalThreat(bool apply, bool Real)
@@ -6060,6 +6060,8 @@ void Aura::PeriodicTick()
                 pdamage = amount;
 
             pdamage = pCaster->SpellHealingBonus(GetSpellProto(), pdamage, DOT, m_target);
+            
+            pdamage *= m_stackAmount;
 
             sLog.outDetail("PeriodicTick: %u (TypeId: %u) heal of %u (TypeId: %u) for %u health inflicted by %u",
                 GUID_LOPART(GetCasterGUID()), GuidHigh2TypeId(GUID_HIPART(GetCasterGUID())), m_target->GetGUIDLow(), m_target->GetTypeId(), pdamage, GetId());

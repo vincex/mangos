@@ -2521,7 +2521,7 @@ SpellMissInfo Unit::SpellHitResult(Unit *pVictim, SpellEntry const *spell, bool 
         Unit::AuraList const& mReflectSpellsSchool = pVictim->GetAurasByType(SPELL_AURA_REFLECT_SPELLS_SCHOOL);
         for(Unit::AuraList::const_iterator i = mReflectSpellsSchool.begin(); i != mReflectSpellsSchool.end(); ++i)
             if((*i)->GetModifier()->m_miscvalue & GetSpellSchoolMask(spell))
-                reflectchance += (*i)->GetModifier()->m_amount;
+                reflectchance += (*i)->GetModifier()->m_amount * (*i)->m_stackAmount;
 
         if (reflectchance > 0 && roll_chance_i(reflectchance))
         {
@@ -6042,7 +6042,6 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                  return false;
              // stacking
              CastSpell(this, 37658, true, NULL, triggeredByAura);
-             return false;
              Aura * dummy = GetDummyAura(37658);
              if (!dummy || dummy->m_stackAmount <=2)
                 return false;
