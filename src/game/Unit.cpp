@@ -3277,12 +3277,20 @@ bool Unit::AddAura(Aura *Aur)
                 {
                     if(i2->second->GetCasterGUID()==Aur->GetCasterGUID())
                     {
-                        // can be only single (this check done at _each_ aura add
-                        RemoveAura(i2,AURA_REMOVE_BY_STACK);
-                        break;
+                        if(aurSpellInfo->Id == 28093 && i2->second->GetCastItemGUID()!=Aur->GetCastItemGUID())
+                        {
+                            sLog.outDebug("Proc mongoose in dualwield");
+                            stop = true;
+                        }
+                        else
+                        {
+                            // can be only single (this check done at _each_ aura add
+                            RemoveAura(i2,AURA_REMOVE_BY_STACK);
+                            break;
+                        }
                     }
 
-                    bool stop = false;
+                    if(!stop) //dont break iterator we must search enchant proc from main hand and off hand...just skip this aura
                     switch(aurName)
                     {
                         // DoT/HoT/etc
