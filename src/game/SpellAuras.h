@@ -318,6 +318,9 @@ class MANGOS_DLL_SPEC Aura
         void PeriodicTick();
         void PeriodicDummyTick();
 
+        int32 GetStackAmount() {return m_stackAmount;}
+        void SetStackAmount(int32 amount) {m_stackAmount=amount;}
+        
         void ReapplyAffectedPassiveAuras(Unit* target, SpellModifier const& spellmod);
 
         Modifier m_modifier;
