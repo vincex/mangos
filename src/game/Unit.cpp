@@ -10586,7 +10586,8 @@ void Unit::SetConfused(bool apply, uint64 casterGUID, uint32 spellID)
 
         CastStop(GetGUID()==casterGUID ? spellID : 0);
 
-        GetMotionMaster()->MoveConfused();
+        if( !( GetTypeId() == TYPEID_PLAYER && ((Player*)this)->InArena() ) )
+            GetMotionMaster()->MoveConfused();
     }
     else
     {
